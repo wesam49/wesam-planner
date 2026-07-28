@@ -1,8 +1,9 @@
-Wesam Planner – Update 13
+Wesam Planner – Update 14
 
-Datensicherung:
-- Bestehende lokale Daten bleiben bei Updates erhalten.
-- Jede Änderung wird automatisch in localStorage und in einer lokalen Sicherung gespeichert.
-- Unter Finanzen > Daten können JSON-Backups exportiert und wieder importiert werden.
-- Backups enthalten Termine, Finanzeinträge, Sparziele und alle Gehaltsfelder.
-- Ältere Daten werden automatisch auf Schema 2 normalisiert.
+Nur eine Änderung:
+- Der VMT-Abrechnungszeitraum wurde um einen Monat nach hinten verschoben.
+- Beispiel:
+  - Einnahme August = Arbeitszeit 12.06.–11.07.
+  - Einnahme September = Arbeitszeit 12.07.–11.08.
+  - Einnahme Oktober = Arbeitszeit 12.08.–11.09.
+- Alle anderen Funktionen aus Update 13 bleiben unverändert.

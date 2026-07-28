@@ -241,8 +241,8 @@ function payrollForPaymentMonth(month){
  const paymentMonthDate=new Date(y,m-1,1);
 
  // VMT payment period: 12th of previous month to 11th of payment month.
- const vmtStart=new Date(y,m-2,12);
- const vmtEnd=new Date(y,m-1,11);
+ const vmtStart=new Date(y,m-3,12);
+ const vmtEnd=new Date(y,m-2,11);
  const vmtEvents=state.events.filter(e=>e.type==='VMT'&&parseDate(e.date)>=vmtStart&&parseDate(e.date)<=vmtEnd);
  const vmtHours=vmtEvents.reduce((s,e)=>s+hours(e),0);
  const vmtGross=vmtHours*15;
