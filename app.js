@@ -177,7 +177,9 @@ function payrollForPaymentMonth(month){
 
  return {
    paymentMonth:month,
-   vmtStart,vmtEnd,vmtHours,vmtNet,
+   vmtStart,vmtEnd,
+   start:vmtStart,end:vmtEnd,
+   vmtHours,vmtNet,
    bibWorkMonth,bibTotal,bibMini,bibNormal,bibPay,
    brunnerWorkMonth,br,
    total:vmtNet+bibPay+br.total
@@ -298,7 +300,8 @@ function syncModeButtons(){
 function renderSalary(){
  const s=salaryFor(salaryMonth);
  document.getElementById('salaryMonthPicker').value=salaryMonth;
- document.getElementById('salaryDetails').innerHTML=`
+ const salaryBox=document.getElementById('salaryDetails');
+ salaryBox.innerHTML=`
  <div class="row"><div><b>VMT</b><div class="tiny">${iso(s.start)} bis ${iso(s.end)} · ${s.vmtHours.toFixed(2)} Std.</div></div><div class="amount">${money(s.vmtNet)}</div></div>
  <div class="row"><div><b>Bib</b><div class="tiny">Arbeitsmonat ${s.bibWorkMonth} · Normal ${s.bibNormal.toFixed(2)} Std. · Bib mini ${s.bibMini.toFixed(2)} Std.</div></div><div class="amount">${money(s.bibPay)}</div></div>
  <div class="row"><div><b>Brunner</b><div class="tiny">Arbeitsmonat ${s.brunnerWorkMonth} · Gearbeitet ${s.br.worked.toFixed(2)} Std. · Grundlohn ${s.br.paidBase.toFixed(2)} Std. · Übertrag ${s.br.carry.toFixed(2)} Std.</div><div class="tiny">Nacht ${s.br.night} · Sonntag ${s.br.sunday} · Feiertag ${s.br.holiday}</div></div><div class="amount">${money(s.br.total)}</div></div>

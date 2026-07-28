@@ -1,9 +1,7 @@
-Wesam Planner – Update 10
+Wesam Planner – Update 11
 
-Korrekturen:
-- Update 8 muss nicht separat installiert werden; alle September-Daten sind enthalten.
-- Gespeicherte Daten werden defensiv geladen und auf die aktuelle Datenstruktur normalisiert.
-- September-Termine werden einmalig ergänzt, ohne identische Termine zu verdoppeln.
-- Neuer Service Worker lädt index.html und app.js bevorzugt aus dem Netzwerk, damit keine gemischten alten und neuen Versionen entstehen.
-- Bei einem JavaScript-Fehler erscheint nun eine sichtbare Fehlermeldung statt einer leeren Oberfläche.
-- In der Kopfzeile steht Version 10 zur Kontrolle.
+Korrektur:
+- Die leere Gehaltskarte wurde behoben.
+- Ursache: Die neue zentrale Gehaltsberechnung lieferte vmtStart/vmtEnd, während die Gehaltsansicht noch start/end erwartete.
+- Die Gehaltsansicht zeigt jetzt wieder VMT, Bib, Brunner und Gesamtgehalt.
+- Kalender, Gehalt, Finanzen und Übersicht bleiben weiterhin an dieselbe zentrale Berechnung gekoppelt.
