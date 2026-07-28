@@ -1,4 +1,4 @@
-const € = n => new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(Number(n||0));
+const money = n => new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(Number(n||0));
 const pad=n=>String(n).padStart(2,'0');
 const monthKey=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}`;
 const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -120,36 +120,36 @@ function renderSalary(){
   const key=monthKey(current),s=salaryFor(key);
   const br=s.br;
   document.getElementById('salaryDetails').innerHTML=`
-    <div class="salary-row"><div><b>VMT</b><div class="tiny">دورة ${iso(s.start)} إلى ${iso(s.end)} · ${s.vmtHours.toFixed(2)} h</div></div><div><b>${€(s.vmtNet)}</b><div class="tiny">بعد 9% + 70€</div></div></div>
-    <div class="salary-row"><div><b>Bibliothek</b><div class="tiny">عن ساعات ${s.bibWorkKey} · ${s.bibHours.toFixed(2)} h</div></div><div><b>${€(s.bibPay)}</b></div></div>
-    <div class="salary-row"><div><b>Brunner</b><div class="tiny">عملت ${br.worked.toFixed(2)} h · أساسي مدفوع ${br.paidBase.toFixed(2)} h · مرحّل ${br.carry.toFixed(2)} h</div><div class="tiny">ليل ${br.night} h · أحد ${br.sunday} h · عطلة ${br.holiday} h</div></div><div><b>${€(br.total)}</b><div class="tiny">إضافات ${€(br.addons)}</div></div></div>
-    <div class="salary-row"><div><b>الإجمالي المتوقع</b></div><div class="metric">${€(s.total)}</div></div>`;
+    <div class="salary-row"><div><b>VMT</b><div class="tiny">دورة ${iso(s.start)} إلى ${iso(s.end)} · ${s.vmtHours.toFixed(2)} h</div></div><div><b>${money(s.vmtNet)}</b><div class="tiny">بعد 9% + 70€</div></div></div>
+    <div class="salary-row"><div><b>Bibliothek</b><div class="tiny">عن ساعات ${s.bibWorkKey} · ${s.bibHours.toFixed(2)} h</div></div><div><b>${money(s.bibPay)}</b></div></div>
+    <div class="salary-row"><div><b>Brunner</b><div class="tiny">عملت ${br.worked.toFixed(2)} h · أساسي مدفوع ${br.paidBase.toFixed(2)} h · مرحّل ${br.carry.toFixed(2)} h</div><div class="tiny">ليل ${br.night} h · أحد ${br.sunday} h · عطلة ${br.holiday} h</div></div><div><b>${money(br.total)}</b><div class="tiny">إضافات ${money(br.addons)}</div></div></div>
+    <div class="salary-row"><div><b>الإجمالي المتوقع</b></div><div class="metric">${money(s.total)}</div></div>`;
 }
 function renderBudget(){
   const key=monthKey(current), ex=state.expenses.filter(x=>x.month===key);
   const total=ex.reduce((s,x)=>s+Number(x.amount),0);
-  document.getElementById('budgetTotal').textContent=€(total);
-  document.getElementById('expenseList').innerHTML=ex.length?ex.map(x=>`<div class="expense-row" data-id="${x.id}"><div>${x.name}</div><b>${€(x.amount)}</b></div>`).join(''):'لا توجد مصاريف';
+  document.getElementById('budgetTotal').textContent=money(total);
+  document.getElementById('expenseList').innerHTML=ex.length?ex.map(x=>`<div class="expense-row" data-id="${x.id}"><div>${x.name}</div><b>${money(x.amount)}</b></div>`).join(''):'لا توجد مصاريف';
   document.querySelectorAll('.expense-row').forEach(x=>x.onclick=()=>openExpense(x.dataset.id));
   const saved=state.goals.reduce((s,g)=>s+Number(g.saved||0),0);
-  document.getElementById('savingAmount').textContent=€(saved);
+  document.getElementById('savingAmount').textContent=money(saved);
   document.getElementById('goalList').innerHTML=state.goals.length?state.goals.map(g=>{
     const p=Math.min(100,(Number(g.saved||0)/Math.max(1,Number(g.target||0)))*100);
-    return `<div class="expense-row" data-id="${g.id}"><div style="flex:1"><b>${g.name}</b><div class="tiny">${€(g.saved)} من ${€(g.target)}</div><div class="progress"><span style="width:${p}%"></span></div></div><b>${p.toFixed(0)}%</b></div>`
+    return `<div class="expense-row" data-id="${g.id}"><div style="flex:1"><b>${g.name}</b><div class="tiny">${money(g.saved)} من ${money(g.target)}</div><div class="progress"><span style="width:${p}%"></span></div></div><b>${p.toFixed(0)}%</b></div>`
   }).join(''):'لا توجد أهداف';
   document.querySelectorAll('#goalList .expense-row').forEach(x=>x.onclick=()=>openGoal(x.dataset.id));
 }
 function renderDashboard(){
   const key=monthKey(current),s=salaryFor(key);
   const expenses=state.expenses.filter(x=>x.month===key).reduce((a,x)=>a+Number(x.amount),0);
-  document.getElementById('dashIncome').textContent=€(s.total);
-  document.getElementById('dashExpenses').textContent=€(expenses);
-  document.getElementById('dashRemaining').textContent=€(s.total-expenses);
+  document.getElementById('dashIncome').textContent=money(s.total);
+  document.getElementById('dashExpenses').textContent=money(expenses);
+  document.getElementById('dashRemaining').textContent=money(s.total-expenses);
   document.getElementById('dashCarry').textContent=`${s.br.carry.toFixed(2)} h`;
   document.getElementById('dashboardSalary').innerHTML=`
-    <div class="salary-row"><span>VMT</span><b>${€(s.vmtNet)}</b></div>
-    <div class="salary-row"><span>Bibliothek</span><b>${€(s.bibPay)}</b></div>
-    <div class="salary-row"><span>Brunner</span><b>${€(s.br.total)}</b></div>`;
+    <div class="salary-row"><span>VMT</span><b>${money(s.vmtNet)}</b></div>
+    <div class="salary-row"><span>Bibliothek</span><b>${money(s.bibPay)}</b></div>
+    <div class="salary-row"><span>Brunner</span><b>${money(s.br.total)}</b></div>`;
   const now=new Date(), upcoming=state.events.filter(e=>parseDate(e.date)>=new Date(now.getFullYear(),now.getMonth(),now.getDate())).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start)).slice(0,5);
   document.getElementById('upcoming').innerHTML=upcoming.length?upcoming.map(e=>`<div class="event-row"><div><b>${e.type}</b><div class="tiny">${e.date} ${e.start||''}</div></div><span>${hours(e).toFixed(2)} h</span></div>`).join(''):'لا توجد مواعيد قادمة';
 }
@@ -183,37 +183,38 @@ function openEvent(id,date){
 }
 document.getElementById('eventForm').onsubmit=e=>{
   e.preventDefault(); const id=document.getElementById('eventId').value||uid();
-  const obj={id,type:eventType.value,date:eventDate.value,start:eventStart.value,end:eventEnd.value,
-    paidHours:Number(paidHours.value||0),nightHours:Number(nightHours.value||0),sundayHours:Number(sundayHours.value||0),
-    holidayHours:Number(holidayHours.value||0),note:eventNote.value};
+  const obj={id,type:document.getElementById('eventType').value,date:document.getElementById('eventDate').value,start:document.getElementById('eventStart').value,end:document.getElementById('eventEnd').value,
+    paidHours:Number(document.getElementById('paidHours').value||0),nightHours:Number(document.getElementById('nightHours').value||0),sundayHours:Number(document.getElementById('sundayHours').value||0),
+    holidayHours:Number(document.getElementById('holidayHours').value||0),note:document.getElementById('eventNote').value};
   const i=state.events.findIndex(x=>x.id===id); if(i>=0)state.events[i]=obj;else state.events.push(obj);
-  eventModal.classList.remove('show');render();
+  document.getElementById('eventModal').classList.remove('show');render();
+console.log('Wesam Planner Update 2 loaded');
 };
-document.getElementById('deleteEventBtn').onclick=()=>{const id=eventId.value;state.events=state.events.filter(x=>x.id!==id);eventModal.classList.remove('show');render()};
+document.getElementById('deleteEventBtn').onclick=()=>{const id=document.getElementById('eventId').value;state.events=state.events.filter(x=>x.id!==id);document.getElementById('eventModal').classList.remove('show');render()};
 
 function openExpense(id){
   const x=id?state.expenses.find(e=>e.id===id):null;
-  expenseId.value=x?.id||'';expenseName.value=x?.name||'';expenseAmount.value=x?.amount||'';expenseMonth.value=x?.month||monthKey(current);
-  deleteExpenseBtn.style.display=x?'inline-block':'none';expenseModal.classList.add('show');
+  document.getElementById('expenseId').value=x?.id||'';document.getElementById('expenseName').value=x?.name||'';document.getElementById('expenseAmount').value=x?.amount||'';document.getElementById('expenseMonth').value=x?.month||monthKey(current);
+  document.getElementById('deleteExpenseBtn').style.display=x?'inline-block':'none';document.getElementById('expenseModal').classList.add('show');
 }
 document.getElementById('expenseForm').onsubmit=e=>{
-  e.preventDefault(); const id=expenseId.value||uid(),obj={id,name:expenseName.value,amount:Number(expenseAmount.value),month:expenseMonth.value};
+  e.preventDefault(); const id=document.getElementById('expenseId').value||uid(),obj={id,name:document.getElementById('expenseName').value,amount:Number(document.getElementById('expenseAmount').value),month:document.getElementById('expenseMonth').value};
   const i=state.expenses.findIndex(x=>x.id===id);if(i>=0)state.expenses[i]=obj;else state.expenses.push(obj);
-  expenseModal.classList.remove('show');render();
+  document.getElementById('expenseModal').classList.remove('show');render();
 }
-deleteExpenseBtn.onclick=()=>{state.expenses=state.expenses.filter(x=>x.id!==expenseId.value);expenseModal.classList.remove('show');render()};
+document.getElementById('deleteExpenseBtn').onclick=()=>{state.expenses=state.expenses.filter(x=>x.id!==document.getElementById('expenseId').value);document.getElementById('expenseModal').classList.remove('show');render()};
 
 function openGoal(id){
   const g=id?state.goals.find(x=>x.id===id):null;
-  goalId.value=g?.id||'';goalName.value=g?.name||'';goalTarget.value=g?.target||'';goalSaved.value=g?.saved||0;
-  deleteGoalBtn.style.display=g?'inline-block':'none';goalModal.classList.add('show');
+  document.getElementById('goalId').value=g?.id||'';document.getElementById('goalName').value=g?.name||'';document.getElementById('goalTarget').value=g?.target||'';document.getElementById('goalSaved').value=g?.saved||0;
+  document.getElementById('deleteGoalBtn').style.display=g?'inline-block':'none';document.getElementById('goalModal').classList.add('show');
 }
-goalForm.onsubmit=e=>{
-  e.preventDefault();const id=goalId.value||uid(),obj={id,name:goalName.value,target:Number(goalTarget.value),saved:Number(goalSaved.value)};
+document.getElementById('goalForm').onsubmit=e=>{
+  e.preventDefault();const id=document.getElementById('goalId').value||uid(),obj={id,name:document.getElementById('goalName').value,target:Number(document.getElementById('goalTarget').value),saved:Number(document.getElementById('goalSaved').value)};
   const i=state.goals.findIndex(x=>x.id===id);if(i>=0)state.goals[i]=obj;else state.goals.push(obj);
-  goalModal.classList.remove('show');render();
+  document.getElementById('goalModal').classList.remove('show');render();
 }
-deleteGoalBtn.onclick=()=>{state.goals=state.goals.filter(x=>x.id!==goalId.value);goalModal.classList.remove('show');render()};
+document.getElementById('deleteGoalBtn').onclick=()=>{state.goals=state.goals.filter(x=>x.id!==document.getElementById('goalId').value);document.getElementById('goalModal').classList.remove('show');render()};
 
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
 render();
