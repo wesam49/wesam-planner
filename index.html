@@ -47,7 +47,7 @@
     .bottom-inner{max-width:980px;margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.bottom button{background:transparent;box-shadow:none;color:var(--muted);font-size:12px;padding:7px 2px}.bottom button.active{color:var(--text)}
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.42);display:none;align-items:flex-end;z-index:20}.modal.show{display:flex}
     .sheet{width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - 10px);overflow:auto;background:var(--bg);border-radius:24px 24px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom))}.sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.sheet-head h3{margin:0}
-    .segmented{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#e8edf4;padding:5px;border-radius:14px}.segmented button{box-shadow:none;background:transparent}.segmented button.active{background:#fff}
+    .segmented{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px;background:#e8edf4;padding:5px;border-radius:14px}.segmented button{box-shadow:none;background:transparent}.segmented button.active{background:#fff}
     .progress{height:10px;background:#e2e8f0;border-radius:999px;overflow:hidden}.progress span{display:block;height:100%;background:var(--green)}
     .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
     .month-weekday{text-align:center;font-size:11px;color:var(--muted);padding:4px 0}
@@ -104,7 +104,12 @@
 </section>
 
 <section id="salary" class="screen">
-  <div class="section-title"><h2>Gehaltsberechnung</h2></div>
+  <div class="week-head">
+    <button id="prevSalaryMonth">‹</button>
+    <input type="month" id="salaryMonthPicker" aria-label="Gehaltsmonat auswählen" style="max-width:220px;text-align:center;font-weight:800">
+    <button id="nextSalaryMonth">›</button>
+  </div>
+  <div class="section-title"><h2>Automatisch berechnete Gehälter</h2></div>
   <div class="card" id="salaryDetails"></div>
   <div class="section-title"><h2>Berechnungsregeln</h2></div>
   <div class="card tiny">
@@ -118,7 +123,9 @@
   <div class="segmented"><button id="planBtn" class="active">Monatsplan</button><button id="yearBtn">Jahresübersicht</button><button id="goalsBtn">Sparziele</button></div>
   <div id="planView">
     <div class="week-head" style="margin-top:10px">
-      <button id="prevFinanceMonth">‹</button><div class="week-range" id="financeMonthLabel"></div><button id="nextFinanceMonth">›</button>
+      <button id="prevFinanceMonth">‹</button>
+      <input type="month" id="financeMonthPicker" aria-label="Monat auswählen" style="max-width:220px;text-align:center;font-weight:800">
+      <button id="nextFinanceMonth">›</button>
     </div>
     <div class="section-title"><h2>Planung</h2><button class="primary" id="addFinanceBtn">+ Eintrag</button></div>
     <div class="card" id="financeList"></div>

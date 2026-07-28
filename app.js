@@ -72,6 +72,7 @@ let selectedDate=new Date(2026,7,10);
 let calendarMode='month';
 let currentMonth='2026-08';
 let financeMonth='2026-08';
+let salaryMonth='2026-09';
 let selectedMultiDates=new Set();
 
 function save(){localStorage.setItem('wesamPlannerV3',JSON.stringify(state))}
@@ -104,17 +105,40 @@ function financeSummary(month){
  const rows=state.finance.filter(x=>x.month===month),income=rows.filter(x=>x.type==='income').reduce((s,x)=>s+Number(x.amount),0),expense=rows.filter(x=>x.type==='expense').reduce((s,x)=>s+Number(x.amount),0),saving=rows.filter(x=>x.type==='saving').reduce((s,x)=>s+Number(x.amount),0);
  return {rows,income,expense,saving,remaining:income-expense};
 }
-function automaticBrunnerTransfer(month){
+function previousMonth(month){
  const [y,m]=month.split('-').map(Number);
- const prev=monthKey(new Date(y,m-2,1));
- const prevSalary=salaryFor(prev);
- const transferableHours=Math.max(0,Number(prevSalary.br.carry||0));
- return {hours:transferableHours,amount:transferableHours*15.5};
+ return monthKey(new Date(y,m-2,1));
+}
+function automaticEmploymentIncome(month){
+ const currentSalary=salaryFor(month);
+ const brunnerSalary=salaryFor(previousMonth(month));
+ return {
+   VMT: Number(currentSalary.vmtNet||0),
+   Bib: Number(currentSalary.bibPay||0),
+   Brunner: Number(brunnerSalary.br.total||0)
+ };
+}
+function employerFromName(name){
+ const n=String(name||'').trim().toLowerCase();
+ if(n.startsWith('vmt')) return 'VMT';
+ if(n.startsWith('bib') || n.startsWith('bibliothek')) return 'Bib';
+ if(n.startsWith('brunner')) return 'Brunner';
+ return null;
 }
 function effectiveFinanceSummary(month){
- const f=financeSummary(month);
- const transfer=automaticBrunnerTransfer(month);
- return {...f,autoBrunnerTransfer:transfer,displayIncome:f.income+transfer.amount,displayRemaining:f.income+transfer.amount-f.expense};
+ const rows=state.finance.filter(x=>x.month===month);
+ const automatic=automaticEmploymentIncome(month);
+ const visibleRows=rows.filter(x=>{
+   if(x.type!=='income') return true;
+   const employer=employerFromName(x.name);
+   return !(employer && automatic[employer]>0);
+ });
+ const manualIncome=visibleRows.filter(x=>x.type==='income').reduce((s,x)=>s+Number(x.amount),0);
+ const expense=visibleRows.filter(x=>x.type==='expense').reduce((s,x)=>s+Number(x.amount),0);
+ const saving=visibleRows.filter(x=>x.type==='saving').reduce((s,x)=>s+Number(x.amount),0);
+ const automaticTotal=Object.values(automatic).reduce((s,x)=>s+Number(x||0),0);
+ const displayIncome=manualIncome+automaticTotal;
+ return {rows:visibleRows,allRows:rows,automatic,manualIncome,expense,saving,displayIncome,displayRemaining:displayIncome-expense};
 }
 function savingsUntil(month,includeFuture=false){
  const [year,mon]=month.split('-').map(Number);
@@ -190,7 +214,8 @@ function syncModeButtons(){
  document.querySelectorAll('#calendarMode [data-mode]').forEach(x=>x.classList.toggle('active',x.dataset.mode===calendarMode));
 }
 function renderSalary(){
- const s=salaryFor(currentMonth);
+ const s=salaryFor(salaryMonth);
+ document.getElementById('salaryMonthPicker').value=salaryMonth;
  document.getElementById('salaryDetails').innerHTML=`
  <div class="row"><div><b>VMT</b><div class="tiny">${iso(s.start)} bis ${iso(s.end)} · ${s.vmtHours.toFixed(2)} Std.</div></div><div class="amount">${money(s.vmtNet)}</div></div>
  <div class="row"><div><b>Bib</b><div class="tiny">Arbeitsmonat ${s.bibWorkMonth} · Normal ${s.bibNormal.toFixed(2)} Std. · Bib mini ${s.bibMini.toFixed(2)} Std.</div></div><div class="amount">${money(s.bibPay)}</div></div>
@@ -199,13 +224,16 @@ function renderSalary(){
 }
 function renderFinance(){
  const f=effectiveFinanceSummary(financeMonth);
- const monthDate=parseDate(financeMonth+'-01');
- document.getElementById('financeMonthLabel').textContent=new Intl.DateTimeFormat('de-DE',{month:'long',year:'numeric'}).format(monthDate);
- const autoRow=f.autoBrunnerTransfer.amount>0?`<div class="row"><span>Brunner-Übertrag <span class="tiny">(${f.autoBrunnerTransfer.hours.toFixed(2)} Std.)</span></span><span class="amount">${money(f.autoBrunnerTransfer.amount)}</span></div>`:'';
+ document.getElementById('financeMonthPicker').value=financeMonth;
+ const automaticRows=Object.entries(f.automatic)
+   .filter(([,amount])=>Number(amount)>0)
+   .map(([name,amount])=>`<div class="row"><div><span>${name}</span><div class="tiny">Automatisch aus Kalender und Gehaltsregeln</div></div><span class="amount">${money(amount)}</span></div>`)
+   .join('');
+ const manualIncomeRows=f.rows.filter(x=>x.type==='income').map(x=>`<div class="row finance-row" data-id="${x.id}"><span>${x.name}</span><span class="amount">${money(x.amount)}</span></div>`).join('');
  document.getElementById('financeList').innerHTML=`
- <div class="row"><b>Einnahmen</b><span class="amount positive">${money(f.displayIncome)}</span></div>
- ${autoRow}
- ${f.rows.filter(x=>x.type==='income').map(x=>`<div class="row finance-row" data-id="${x.id}"><span>${x.name}</span><span class="amount">${money(x.amount)}</span></div>`).join('')}
+ <div class="row"><b>Einnahmen gesamt</b><span class="amount positive">${money(f.displayIncome)}</span></div>
+ ${automaticRows?`<div class="row"><b>Automatisch berechnet</b><span class="tiny">VMT · Bib · Brunner</span></div>${automaticRows}`:''}
+ ${manualIncomeRows?`<div class="row"><b>Manuell eingetragen</b><span class="tiny">z. B. Wohngeld oder Rückzahlung</span></div>${manualIncomeRows}`:''}
  <div class="row"><b>Ausgaben</b><span class="amount negative">${money(f.expense)}</span></div>
  ${f.rows.filter(x=>x.type==='expense').map(x=>`<div class="row finance-row" data-id="${x.id}"><span>${x.name}</span><span class="amount">${money(x.amount)}</span></div>`).join('')}
  <div class="row"><b>Verbleibender Betrag</b><span class="amount ${f.displayRemaining<0?'negative':''}">${money(f.displayRemaining)}</span></div>
@@ -220,11 +248,12 @@ function renderYearOverview(){
  const rows=[];
  for(let m=1;m<=12;m++){
    const mk=`${year}-${pad(m)}`,f=effectiveFinanceSummary(mk);
-   if(f.rows.length||f.autoBrunnerTransfer.amount>0){
-     rows.push(`<div class="row"><div><b>${new Intl.DateTimeFormat('de-DE',{month:'long'}).format(new Date(Number(year),m-1,1))}</b><div class="tiny">Einnahmen ${money(f.displayIncome)} · Ausgaben ${money(f.expense)}</div></div><div><div class="amount">${money(f.displayRemaining)}</div><div class="tiny">Sparen ${money(f.saving)}</div></div></div>`);
+   if(f.allRows.length||f.displayIncome>0){
+     rows.push(`<div class="row" data-finance-month="${mk}"><div><b>${new Intl.DateTimeFormat('de-DE',{month:'long'}).format(new Date(Number(year),m-1,1))}</b><div class="tiny">Einnahmen ${money(f.displayIncome)} · Ausgaben ${money(f.expense)}</div></div><div><div class="amount ${f.displayRemaining<0?'negative':''}">${money(f.displayRemaining)}</div><div class="tiny">Sparen ${money(f.saving)}</div></div></div>`);
    }
  }
  document.getElementById('yearList').innerHTML=rows.join('')||'Keine Daten';
+ document.querySelectorAll('[data-finance-month]').forEach(x=>x.onclick=()=>{financeMonth=x.dataset.financeMonth;salaryMonth=x.dataset.financeMonth;showFinanceTab('plan');renderAll()});
 }
 function renderDashboard(){
  const f=effectiveFinanceSummary(currentMonth),s=salaryFor(currentMonth);
@@ -234,7 +263,7 @@ function renderDashboard(){
  document.getElementById('dashExpectedSaved').textContent=money(expected);
  document.getElementById('dashIncome').textContent=money(f.displayIncome);
  document.getElementById('dashExpenses').textContent=money(f.expense);
- document.getElementById('dashboardMonth').innerHTML=`<div class="row"><span>Verbleibender Betrag</span><b class="${f.displayRemaining<0?'negative':''}">${money(f.displayRemaining)}</b></div><div class="row"><span>Berechnetes Gehalt aus Terminen</span><b>${money(s.total)}</b></div>`;
+ document.getElementById('dashboardMonth').innerHTML=`<div class="row"><span>Verbleibender Betrag</span><b class="${f.displayRemaining<0?'negative':''}">${money(f.displayRemaining)}</b></div><div class="row"><span>Automatische Arbeitseinnahmen</span><b>${money(Object.values(f.automatic).reduce((a,b)=>a+Number(b||0),0))}</b></div>`;
  const now=new Date(),up=state.events.filter(e=>parseDate(e.date)>=new Date(now.getFullYear(),now.getMonth(),now.getDate())).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start)).slice(0,5);
  document.getElementById('upcoming').innerHTML=up.length?up.map(e=>`<div class="row"><div><b>${e.type}</b><div class="tiny">${e.date} ${e.start||''}</div></div><span>${hours(e).toFixed(2)} Std.</span></div>`).join(''):'Keine anstehenden Termine';
 }
@@ -293,6 +322,11 @@ document.getElementById('yearBtn').onclick=()=>showFinanceTab('year');
 document.getElementById('goalsBtn').onclick=()=>showFinanceTab('goals');
 document.getElementById('prevFinanceMonth').onclick=()=>{financeMonth=monthKey(addMonths(parseDate(financeMonth+'-01'),-1));renderAll()};
 document.getElementById('nextFinanceMonth').onclick=()=>{financeMonth=monthKey(addMonths(parseDate(financeMonth+'-01'),1));renderAll()};
+document.getElementById('financeMonthPicker').onchange=e=>{if(e.target.value){financeMonth=e.target.value;renderAll()}};
+document.getElementById('prevSalaryMonth').onclick=()=>{salaryMonth=monthKey(addMonths(parseDate(salaryMonth+'-01'),-1));renderAll()};
+document.getElementById('nextSalaryMonth').onclick=()=>{salaryMonth=monthKey(addMonths(parseDate(salaryMonth+'-01'),1));renderAll()};
+document.getElementById('salaryMonthPicker').onchange=e=>{if(e.target.value){salaryMonth=e.target.value;renderAll()}};
+
 
 function renderMultiDayPicker(){
  const value=document.getElementById('multiMonth').value||currentMonth;

@@ -1,10 +1,7 @@
-Wesam Planner – Update 5
+Wesam Planner – Update 7
 
 Neu:
-- Unabhängige Monatsnavigation in Finanzen
-- Jahresübersicht
-- Optimierte iPhone-Safe-Areas oben und unten
-- Brunner-Übertrag erscheint automatisch als Einnahme im Folgemonat
-- Startseite zeigt bisheriges und erwartetes Sparguthaben
-- Negative Monatsbeträge werden vom Sparguthaben abgezogen
-- Mehrere gleiche Termine können durch Auswahl mehrerer Kalendertage auf einmal angelegt werden
+- Die Gehaltsseite hat jetzt eine unabhängige Monatsauswahl.
+- Mit Pfeilen oder dem Monatsfeld kann jeder Monat geöffnet werden.
+- VMT-Zeitraum, Bib-Arbeitsmonat, Bib-mini-Stunden, Brunner-Grundstunden, Zuschläge, Übertrag und Gesamtgehalt werden für den gewählten Monat neu berechnet.
+- Finanzen, Kalender und Gehalt behalten jeweils ihre eigene Monatsauswahl.
