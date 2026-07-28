@@ -131,23 +131,61 @@ function hours(e){
  let m=(eh*60+em)-(sh*60+sm);if(m<0)m+=1440;return m/60;
 }
 function brunnerForWorkMonth(workMonth){
- const months=[...new Set(state.events.filter(e=>e.type==='Brunner').map(e=>e.date.slice(0,7)))].sort();
+ // Brunner carry must continue through months with no new shifts.
+ // Example: 72 hours in August -> 38 paid in September, 34 carried
+ // -> the 34 hours are paid in October even if September had no shifts.
+ const brunnerEvents=state.events.filter(e=>e.type==='Brunner');
+ if(!brunnerEvents.length){
+   return {workMonth,worked:0,paidBase:0,carryIn:0,carry:0,night:0,sunday:0,holiday:0,addons:0,total:0};
+ }
+
+ const firstMonth=brunnerEvents.map(e=>e.date.slice(0,7)).sort()[0];
+ const firstDate=parseDate(firstMonth+'-01');
+ const targetDate=parseDate(workMonth+'-01');
+
+ // If the requested month is earlier than the first Brunner month, nothing exists yet.
+ if(targetDate<firstDate){
+   return {workMonth,worked:0,paidBase:0,carryIn:0,carry:0,night:0,sunday:0,holiday:0,addons:0,total:0};
+ }
+
  let carry=0;
- let result={workMonth,worked:0,paidBase:0,carry:0,night:0,sunday:0,holiday:0,addons:0,total:0};
- for(const mk of months){
-   const ev=state.events.filter(e=>e.type==='Brunner'&&e.date.startsWith(mk));
+ let cursor=new Date(firstDate);
+ let result={workMonth,worked:0,paidBase:0,carryIn:0,carry:0,night:0,sunday:0,holiday:0,addons:0,total:0};
+
+ while(cursor<=targetDate){
+   const mk=monthKey(cursor);
+   const ev=brunnerEvents.filter(e=>e.date.startsWith(mk));
    const worked=ev.reduce((s,e)=>s+hours(e),0);
    const night=ev.reduce((s,e)=>s+Number(e.nightHours||0),0);
    const sunday=ev.reduce((s,e)=>s+Number(e.sundayHours||0),0);
    const holiday=ev.reduce((s,e)=>s+Number(e.holidayHours||0),0);
-   const available=carry+worked;
+
+   const carryIn=carry;
+   const available=carryIn+worked;
    const paidBase=Math.min(38,available);
-   carry=available-paidBase;
+   carry=Math.max(0,available-paidBase);
+
+   // Supplements belong to the shifts of this work month.
    const addons=night*15.5*.15+sunday*15.5*.5+holiday*15.5;
+
    if(mk===workMonth){
-     result={workMonth,worked,paidBase,carry,night,sunday,holiday,addons,total:paidBase*15.5+addons};
+     result={
+       workMonth,
+       worked,
+       paidBase,
+       carryIn,
+       carry,
+       night,
+       sunday,
+       holiday,
+       addons,
+       total:paidBase*15.5+addons
+     };
    }
+
+   cursor=addMonths(cursor,1);
  }
+
  return result;
 }
 
@@ -304,7 +342,7 @@ function renderSalary(){
  salaryBox.innerHTML=`
  <div class="row"><div><b>VMT</b><div class="tiny">${iso(s.start)} bis ${iso(s.end)} · ${s.vmtHours.toFixed(2)} Std.</div></div><div class="amount">${money(s.vmtNet)}</div></div>
  <div class="row"><div><b>Bib</b><div class="tiny">Arbeitsmonat ${s.bibWorkMonth} · Normal ${s.bibNormal.toFixed(2)} Std. · Bib mini ${s.bibMini.toFixed(2)} Std.</div></div><div class="amount">${money(s.bibPay)}</div></div>
- <div class="row"><div><b>Brunner</b><div class="tiny">Arbeitsmonat ${s.brunnerWorkMonth} · Gearbeitet ${s.br.worked.toFixed(2)} Std. · Grundlohn ${s.br.paidBase.toFixed(2)} Std. · Übertrag ${s.br.carry.toFixed(2)} Std.</div><div class="tiny">Nacht ${s.br.night} · Sonntag ${s.br.sunday} · Feiertag ${s.br.holiday}</div></div><div class="amount">${money(s.br.total)}</div></div>
+ <div class="row"><div><b>Brunner</b><div class="tiny">Arbeitsmonat ${s.brunnerWorkMonth} · Gearbeitet ${s.br.worked.toFixed(2)} Std. · Übertrag aus Vormonat ${s.br.carryIn.toFixed(2)} Std.</div><div class="tiny">Ausgezahlte Grundstunden ${s.br.paidBase.toFixed(2)} Std. · Neuer Übertrag ${s.br.carry.toFixed(2)} Std.</div><div class="tiny">Nacht ${s.br.night} · Sonntag ${s.br.sunday} · Feiertag ${s.br.holiday}</div></div><div class="amount">${money(s.br.total)}</div></div>
  <div class="row"><b>Berechnetes Gesamtgehalt</b><div class="metric">${money(s.total)}</div></div><div class="tiny" style="padding-top:10px">Diese Werte werden direkt aus den Kalenderterminen berechnet und identisch in Finanzen verwendet.</div>`;
 }
 function renderFinance(){

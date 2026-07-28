@@ -1,7 +1,12 @@
-Wesam Planner – Update 11
+Wesam Planner – Update 12
 
-Korrektur:
-- Die leere Gehaltskarte wurde behoben.
-- Ursache: Die neue zentrale Gehaltsberechnung lieferte vmtStart/vmtEnd, während die Gehaltsansicht noch start/end erwartete.
-- Die Gehaltsansicht zeigt jetzt wieder VMT, Bib, Brunner und Gesamtgehalt.
-- Kalender, Gehalt, Finanzen und Übersicht bleiben weiterhin an dieselbe zentrale Berechnung gekoppelt.
+Korrektur Brunner-Übertrag:
+- Übertragene Brunner-Stunden bleiben auch in Monaten ohne neue Brunner-Schichten erhalten.
+- Beispiel: 72 Stunden im August -> 38 Stunden Auszahlung im September und 34 Stunden Übertrag.
+- Im Oktober werden die 34 übertragenen Stunden ausgezahlt, auch wenn im September keine Brunner-Schicht vorhanden war.
+- Die Gehaltsseite zeigt jetzt:
+  - Gearbeitete Stunden
+  - Übertrag aus dem Vormonat
+  - Ausgezahlte Grundstunden
+  - Neuen Übertrag
+- Änderungen an Brunner-Terminen im Kalender berechnen die gesamte Übertragskette automatisch neu.
