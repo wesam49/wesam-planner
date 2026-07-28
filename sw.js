@@ -1,4 +1,4 @@
-const CACHE='wesam-planner-v12';
+const CACHE='wesam-planner-v13';
 const ASSETS=['./','index.html','app.js','manifest.webmanifest','icon-192.png','icon-512.png'];
 
 self.addEventListener('install',event=>{

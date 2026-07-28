@@ -123,7 +123,54 @@ let financeMonth='2026-08';
 let salaryMonth='2026-09';
 let selectedMultiDates=new Set();
 
-function save(){localStorage.setItem('wesamPlannerV3',JSON.stringify(state))}
+const DATA_SCHEMA_VERSION=2;
+const STATE_KEY='wesamPlannerV3';
+const AUTO_BACKUP_KEY='wesamPlannerAutoBackup';
+
+function normalizeState(input){
+  const raw=input&&typeof input==='object'?input:{};
+  const normalized={
+    schemaVersion:DATA_SCHEMA_VERSION,
+    events:Array.isArray(raw.events)?raw.events:[],
+    finance:Array.isArray(raw.finance)?raw.finance:[],
+    goals:Array.isArray(raw.goals)?raw.goals:[]
+  };
+
+  normalized.events=normalized.events.map(e=>({
+    id:e.id||uid(),date:e.date||iso(new Date()),type:e.type||'Sonstiges',
+    start:e.start||'',end:e.end||'',paidHours:Number(e.paidHours||0),
+    bibMiniHours:Number(e.bibMiniHours||0),nightHours:Number(e.nightHours||0),
+    sundayHours:Number(e.sundayHours||0),holidayHours:Number(e.holidayHours||0),
+    note:e.note||''
+  }));
+  normalized.finance=normalized.finance.map(x=>({
+    id:x.id||uid(),month:x.month||monthKey(new Date()),
+    type:['income','expense','saving'].includes(x.type)?x.type:'expense',
+    name:x.name||'Eintrag',amount:Number(x.amount||0)
+  }));
+  normalized.goals=normalized.goals.map(g=>({
+    id:g.id||uid(),name:g.name||'Sparziel',
+    target:Number(g.target||0),saved:Number(g.saved||0)
+  }));
+  return normalized;
+}
+
+function save(){
+  state=normalizeState(state);
+  const payload=JSON.stringify(state);
+  localStorage.setItem(STATE_KEY,payload);
+  localStorage.setItem(AUTO_BACKUP_KEY,JSON.stringify({
+    exportedAt:new Date().toISOString(),
+    schemaVersion:DATA_SCHEMA_VERSION,
+    appVersion:13,
+    state
+  }));
+  const status=document.getElementById('backupStatus');
+  if(status)status.textContent=`Automatisch gespeichert: ${new Intl.DateTimeFormat('de-DE',{dateStyle:'short',timeStyle:'short'}).format(new Date())}`;
+}
+state=normalizeState(state);
+save();
+
 function hours(e){
  if(Number(e.paidHours)>0)return Number(e.paidHours);
  if(!e.start||!e.end)return 0;
@@ -436,13 +483,16 @@ function showFinanceTab(tab){
  document.getElementById('planView').style.display=tab==='plan'?'block':'none';
  document.getElementById('yearView').style.display=tab==='year'?'block':'none';
  document.getElementById('goalsView').style.display=tab==='goals'?'block':'none';
+ document.getElementById('dataView').style.display=tab==='data'?'block':'none';
  document.getElementById('planBtn').classList.toggle('active',tab==='plan');
  document.getElementById('yearBtn').classList.toggle('active',tab==='year');
  document.getElementById('goalsBtn').classList.toggle('active',tab==='goals');
+ document.getElementById('dataBtn').classList.toggle('active',tab==='data');
 }
 document.getElementById('planBtn').onclick=()=>showFinanceTab('plan');
 document.getElementById('yearBtn').onclick=()=>showFinanceTab('year');
 document.getElementById('goalsBtn').onclick=()=>showFinanceTab('goals');
+document.getElementById('dataBtn').onclick=()=>showFinanceTab('data');
 document.getElementById('prevFinanceMonth').onclick=()=>{financeMonth=monthKey(addMonths(parseDate(financeMonth+'-01'),-1));renderAll()};
 document.getElementById('nextFinanceMonth').onclick=()=>{financeMonth=monthKey(addMonths(parseDate(financeMonth+'-01'),1));renderAll()};
 document.getElementById('financeMonthPicker').onchange=e=>{if(e.target.value){financeMonth=e.target.value;renderAll()}};
@@ -490,6 +540,43 @@ document.getElementById('multiEventForm').onsubmit=e=>{
  });
  document.getElementById('multiEventModal').classList.remove('show');renderAll();
  if(skipped)alert(`${added} Termine gespeichert, ${skipped} Duplikate übersprungen.`);
+};
+
+
+function buildBackupPayload(){
+  return {
+    product:'Wesam Planner',
+    appVersion:13,
+    schemaVersion:DATA_SCHEMA_VERSION,
+    exportedAt:new Date().toISOString(),
+    state:normalizeState(state)
+  };
+}
+function exportBackup(){
+  const blob=new Blob([JSON.stringify(buildBackupPayload(),null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob),now=new Date();
+  const filename=`WesamPlanner_Backup_${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}.json`;
+  const link=document.createElement('a');
+  link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function importBackupFile(file){
+  if(!file)return;
+  let parsed;
+  try{parsed=JSON.parse(await file.text())}
+  catch(error){alert('Die Datei ist kein gültiges JSON-Backup.');return}
+  const candidate=parsed?.state||parsed;
+  if(!candidate||!Array.isArray(candidate.events)||!Array.isArray(candidate.finance)||!Array.isArray(candidate.goals)){
+    alert('Die Datei enthält keine gültigen Wesam-Planner-Daten.');return;
+  }
+  if(!confirm('Die aktuellen lokalen Daten werden durch dieses Backup ersetzt. Fortfahren?'))return;
+  state=normalizeState(candidate);save();renderAll();
+  alert('Backup wurde erfolgreich wiederhergestellt.');
+}
+document.getElementById('exportBackupBtn').onclick=exportBackup;
+document.getElementById('importBackupBtn').onclick=()=>document.getElementById('importBackupInput').click();
+document.getElementById('importBackupInput').onchange=async e=>{
+  await importBackupFile(e.target.files?.[0]);e.target.value='';
 };
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');

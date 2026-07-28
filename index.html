@@ -63,7 +63,7 @@
 <body>
 <header>
   <div class="top">
-    <div><h1>Wesam Planner</h1><div class="subtitle">Arbeit, Gehalt, Ausgaben und Sparziele · Version 12</div></div>
+    <div><h1>Wesam Planner</h1><div class="subtitle">Arbeit, Gehalt, Ausgaben und Sparziele · Version 13</div></div>
     <button id="todayBtn">Heute</button>
   </div>
   <div class="tabs">
@@ -120,7 +120,7 @@
 </section>
 
 <section id="budget" class="screen">
-  <div class="segmented"><button id="planBtn" class="active">Monatsplan</button><button id="yearBtn">Jahresübersicht</button><button id="goalsBtn">Sparziele</button></div>
+  <div class="segmented"><button id="planBtn" class="active">Monatsplan</button><button id="yearBtn">Jahresübersicht</button><button id="goalsBtn">Sparziele</button><button id="dataBtn">Daten</button></div>
   <div id="planView">
     <div class="week-head" style="margin-top:10px">
       <button id="prevFinanceMonth">‹</button>
@@ -137,6 +137,27 @@
   <div id="goalsView" style="display:none">
     <div class="section-title"><h2>Sparziele</h2><button class="primary" id="addGoalBtn">+ Ziel</button></div>
     <div class="card" id="goalList"></div>
+  </div>
+  <div id="dataView" style="display:none">
+    <div class="section-title"><h2>Datensicherung</h2></div>
+    <div class="card">
+      <div class="row">
+        <div><b>Backup erstellen</b><div class="tiny">Speichert Termine, Finanzen und Sparziele als JSON-Datei.</div></div>
+        <button class="primary" id="exportBackupBtn">Exportieren</button>
+      </div>
+      <div class="row">
+        <div><b>Backup wiederherstellen</b><div class="tiny">Importiert eine zuvor exportierte Wesam-Planner-Datei.</div></div>
+        <button id="importBackupBtn">Importieren</button>
+        <input type="file" id="importBackupInput" accept=".json,application/json" hidden>
+      </div>
+      <div class="row">
+        <div><b>Automatische Speicherung</b><div class="tiny" id="backupStatus">Daten werden nach jeder Änderung auf diesem Gerät gespeichert.</div></div>
+      </div>
+      <div class="row">
+        <div><b>Datenversion</b><div class="tiny">Alte Sicherungen werden beim Import automatisch angepasst.</div></div>
+        <span class="tag">Schema 2</span>
+      </div>
+    </div>
   </div>
 </section>
 </main>
