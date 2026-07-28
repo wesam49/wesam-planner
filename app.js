@@ -68,7 +68,8 @@ const defaultFinance=Object.entries(financeSeed).flatMap(([month,rows])=>rows.ma
 const defaultGoals=[{id:uid(),name:'Führerschein',target:3000,saved:0}];
 
 let state=JSON.parse(localStorage.getItem('wesamPlannerV3')||'null')||{events:defaultEvents,finance:defaultFinance,goals:defaultGoals};
-let weekStart=mondayOf(new Date(2026,7,10));
+let selectedDate=new Date(2026,7,10);
+let calendarMode='month';
 let currentMonth='2026-08';
 
 function save(){localStorage.setItem('wesamPlannerV3',JSON.stringify(state))}
@@ -104,19 +105,62 @@ function financeSummary(month){
 function showScreen(id){document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('[data-screen]').forEach(x=>x.classList.toggle('active',x.dataset.screen===id))}
 document.querySelectorAll('[data-screen]').forEach(x=>x.onclick=()=>showScreen(x.dataset.screen));
 
-function renderWeek(){
- const end=new Date(weekStart);end.setDate(end.getDate()+6);
- document.getElementById('weekRange').textContent=`${shortDate(weekStart)} – ${shortDate(end)}`;
- const grid=document.getElementById('weekGrid');grid.innerHTML='';
- for(let i=0;i<7;i++){
-  const d=new Date(weekStart);d.setDate(d.getDate()+i);const ds=iso(d);
-  const ev=state.events.filter(e=>e.date===ds).sort((a,b)=>a.start.localeCompare(b.start));
-  const today=iso(new Date())===ds?' today':'';
-  const html=ev.length?ev.map(e=>{const [bg,fg]=styles[e.type]||styles.Sonstiges;return `<div class="event" data-id="${e.id}" style="background:${bg};color:${fg}"><div><strong>${e.type}</strong><div class="event-note">${e.note||''}</div></div><div class="event-time">${e.start?`${e.start}–${e.end}`:'Ganztägig'}</div></div>`}).join(''):'<div class="tiny">Keine Termine</div>';
-  grid.insertAdjacentHTML('beforeend',`<div class="day-card${today}" data-date="${ds}"><div class="day-title"><b>${dateFmt(d)}</b><button class="add-day" data-date="${ds}">+</button></div>${html}</div>`);
+function renderCalendarViews(){
+ const title=document.getElementById('calendarTitle');
+ const label=document.getElementById('periodLabel');
+ const dayView=document.getElementById('dayView');
+ const weekGrid=document.getElementById('weekGrid');
+ const monthView=document.getElementById('monthView');
+ dayView.style.display='none';weekGrid.style.display='none';monthView.style.display='none';
+
+ if(calendarMode==='day'){
+   title.textContent='Tagesansicht';
+   label.textContent=new Intl.DateTimeFormat('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).format(selectedDate);
+   dayView.style.display='block';
+   const ds=iso(selectedDate);
+   const ev=state.events.filter(e=>e.date===ds).sort((a,b)=>a.start.localeCompare(b.start));
+   const html=ev.length?ev.map(e=>{const [bg,fg]=styles[e.type]||styles.Sonstiges;return `<div class="event" data-id="${e.id}" style="background:${bg};color:${fg}"><div><strong>${e.type}</strong><div class="event-note">${e.note||''}</div></div><div class="event-time">${e.start?`${e.start}–${e.end}`:'Ganztägig'}</div></div>`}).join(''):'<div class="tiny">Keine Termine</div>';
+   dayView.innerHTML=`<div class="day-detail"><div class="day-title"><b>${dateFmt(selectedDate)}</b><button class="add-day" data-date="${ds}">+</button></div>${html}</div>`;
  }
- document.querySelectorAll('.event').forEach(x=>x.onclick=()=>openEvent(x.dataset.id));
+ else if(calendarMode==='week'){
+   title.textContent='Wochenansicht';
+   const weekStart=mondayOf(selectedDate);const end=new Date(weekStart);end.setDate(end.getDate()+6);
+   label.textContent=`${shortDate(weekStart)} – ${shortDate(end)}`;
+   weekGrid.style.display='grid';weekGrid.innerHTML='';
+   for(let i=0;i<7;i++){
+     const d=new Date(weekStart);d.setDate(d.getDate()+i);const ds=iso(d);
+     const ev=state.events.filter(e=>e.date===ds).sort((a,b)=>a.start.localeCompare(b.start));
+     const today=iso(new Date())===ds?' today':'';
+     const html=ev.length?ev.map(e=>{const [bg,fg]=styles[e.type]||styles.Sonstiges;return `<div class="event" data-id="${e.id}" style="background:${bg};color:${fg}"><div><strong>${e.type}</strong><div class="event-note">${e.note||''}</div></div><div class="event-time">${e.start?`${e.start}–${e.end}`:'Ganztägig'}</div></div>`}).join(''):'<div class="tiny">Keine Termine</div>';
+     weekGrid.insertAdjacentHTML('beforeend',`<div class="day-card${today}" data-date="${ds}"><div class="day-title"><b>${dateFmt(d)}</b><button class="add-day" data-date="${ds}">+</button></div>${html}</div>`);
+   }
+ }
+ else{
+   title.textContent='Monatsansicht';
+   const first=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);
+   label.textContent=new Intl.DateTimeFormat('de-DE',{month:'long',year:'numeric'}).format(first);
+   monthView.style.display='block';
+   const grid=document.createElement('div');grid.className='month-grid';
+   ['Mo','Di','Mi','Do','Fr','Sa','So'].forEach(x=>grid.insertAdjacentHTML('beforeend',`<div class="month-weekday">${x}</div>`));
+   const start=mondayOf(first);
+   for(let i=0;i<42;i++){
+     const d=new Date(start);d.setDate(d.getDate()+i);const ds=iso(d);
+     const ev=state.events.filter(e=>e.date===ds).sort((a,b)=>a.start.localeCompare(b.start));
+     const cls=['month-day'];
+     if(d.getMonth()!==first.getMonth())cls.push('outside');
+     if(iso(new Date())===ds)cls.push('today');
+     const pills=ev.slice(0,3).map(e=>{const [bg,fg]=styles[e.type]||styles.Sonstiges;return `<div class="month-event" data-id="${e.id}" style="background:${bg};color:${fg}">${e.start?e.start+' ':''}${e.type}</div>`}).join('');
+     const more=ev.length>3?`<div class="tiny">+${ev.length-3} weitere</div>`:'';
+     grid.insertAdjacentHTML('beforeend',`<div class="${cls.join(' ')}" data-date="${ds}"><div class="month-day-number">${d.getDate()}</div>${pills}${more}</div>`);
+   }
+   monthView.innerHTML='';monthView.appendChild(grid);
+ }
+ document.querySelectorAll('.event,.month-event').forEach(x=>x.onclick=e=>{e.stopPropagation();openEvent(x.dataset.id)});
  document.querySelectorAll('.add-day').forEach(x=>x.onclick=e=>{e.stopPropagation();openEvent(null,x.dataset.date)});
+ document.querySelectorAll('.month-day').forEach(x=>x.onclick=()=>{selectedDate=parseDate(x.dataset.date);currentMonth=monthKey(selectedDate);calendarMode='day';syncModeButtons();renderAll()});
+}
+function syncModeButtons(){
+ document.querySelectorAll('#calendarMode [data-mode]').forEach(x=>x.classList.toggle('active',x.dataset.mode===calendarMode));
 }
 function renderSalary(){
  const s=salaryFor(currentMonth);
@@ -149,7 +193,7 @@ function renderDashboard(){
  const now=new Date(),up=state.events.filter(e=>parseDate(e.date)>=new Date(now.getFullYear(),now.getMonth(),now.getDate())).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start)).slice(0,5);
  document.getElementById('upcoming').innerHTML=up.length?up.map(e=>`<div class="row"><div><b>${e.type}</b><div class="tiny">${e.date} ${e.start||''}</div></div><span>${hours(e).toFixed(2)} Std.</span></div>`).join(''):'Keine anstehenden Termine';
 }
-function renderAll(){renderWeek();renderSalary();renderFinance();renderDashboard();save()}
+function renderAll(){syncModeButtons();renderCalendarViews();renderSalary();renderFinance();renderDashboard();save()}
 
 function openEvent(id,date){
  const e=id?state.events.find(x=>x.id===id):null;
@@ -172,9 +216,20 @@ function openGoal(id){const g=id?state.goals.find(x=>x.id===id):null;document.ge
 document.getElementById('goalForm').onsubmit=e=>{e.preventDefault();const id=document.getElementById('goalId').value||uid(),obj={id,name:document.getElementById('goalName').value,target:Number(document.getElementById('goalTarget').value),saved:Number(document.getElementById('goalSaved').value)};const i=state.goals.findIndex(x=>x.id===id);if(i>=0)state.goals[i]=obj;else state.goals.push(obj);document.getElementById('goalModal').classList.remove('show');renderAll()};
 document.getElementById('deleteGoalBtn').onclick=()=>{state.goals=state.goals.filter(x=>x.id!==document.getElementById('goalId').value);document.getElementById('goalModal').classList.remove('show');renderAll()};
 
-document.getElementById('prevWeek').onclick=()=>{weekStart.setDate(weekStart.getDate()-7);currentMonth=monthKey(weekStart);renderAll()};
-document.getElementById('nextWeek').onclick=()=>{weekStart.setDate(weekStart.getDate()+7);currentMonth=monthKey(weekStart);renderAll()};
-document.getElementById('todayBtn').onclick=()=>{weekStart=mondayOf(new Date());currentMonth=monthKey(new Date());renderAll()};
+document.getElementById('prevPeriod').onclick=()=>{
+ if(calendarMode==='day')selectedDate.setDate(selectedDate.getDate()-1);
+ else if(calendarMode==='week')selectedDate.setDate(selectedDate.getDate()-7);
+ else selectedDate.setMonth(selectedDate.getMonth()-1);
+ currentMonth=monthKey(selectedDate);renderAll()
+};
+document.getElementById('nextPeriod').onclick=()=>{
+ if(calendarMode==='day')selectedDate.setDate(selectedDate.getDate()+1);
+ else if(calendarMode==='week')selectedDate.setDate(selectedDate.getDate()+7);
+ else selectedDate.setMonth(selectedDate.getMonth()+1);
+ currentMonth=monthKey(selectedDate);renderAll()
+};
+document.getElementById('todayBtn').onclick=()=>{selectedDate=new Date();currentMonth=monthKey(selectedDate);renderAll()};
+document.querySelectorAll('#calendarMode [data-mode]').forEach(x=>x.onclick=()=>{calendarMode=x.dataset.mode;renderAll()});
 document.getElementById('addEventBtn').onclick=()=>openEvent();
 document.getElementById('addFinanceBtn').onclick=()=>openFinance();
 document.getElementById('addGoalBtn').onclick=()=>openGoal();

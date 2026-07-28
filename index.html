@@ -49,6 +49,14 @@
     .sheet{width:100%;max-height:92vh;overflow:auto;background:var(--bg);border-radius:24px 24px 0 0;padding:18px}.sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.sheet-head h3{margin:0}
     .segmented{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#e8edf4;padding:5px;border-radius:14px}.segmented button{box-shadow:none;background:transparent}.segmented button.active{background:#fff}
     .progress{height:10px;background:#e2e8f0;border-radius:999px;overflow:hidden}.progress span{display:block;height:100%;background:var(--green)}
+    .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+    .month-weekday{text-align:center;font-size:11px;color:var(--muted);padding:4px 0}
+    .month-day{min-height:86px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:7px;overflow:hidden}
+    .month-day.outside{opacity:.35}.month-day.today{outline:2px solid var(--accent)}
+    .month-day-number{font-weight:850;font-size:13px;margin-bottom:5px}
+    .month-event{font-size:10px;border-radius:7px;padding:3px 5px;margin:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .day-detail{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:var(--shadow)}
+
     @media(min-width:700px){.cards{grid-template-columns:repeat(4,1fr)}.modal{align-items:center;justify-content:center}.sheet{max-width:640px;border-radius:24px}.week-grid{grid-template-columns:repeat(2,1fr)}}
   </style>
 </head>
@@ -81,11 +89,18 @@
 </section>
 
 <section id="calendar" class="screen">
-  <div class="week-head">
-    <button id="prevWeek">‹</button><div class="week-range" id="weekRange"></div><button id="nextWeek">›</button>
+  <div class="segmented" id="calendarMode">
+    <button data-mode="day">Tag</button>
+    <button data-mode="week">Woche</button>
+    <button data-mode="month" class="active">Monat</button>
   </div>
-  <div class="section-title"><h2>Wochenansicht</h2><button class="primary" id="addEventBtn">+ Termin</button></div>
-  <div class="week-grid" id="weekGrid"></div>
+  <div class="week-head" style="margin-top:10px">
+    <button id="prevPeriod">‹</button><div class="week-range" id="periodLabel"></div><button id="nextPeriod">›</button>
+  </div>
+  <div class="section-title"><h2 id="calendarTitle">Monatsansicht</h2><button class="primary" id="addEventBtn">+ Termin</button></div>
+  <div id="dayView" style="display:none"></div>
+  <div class="week-grid" id="weekGrid" style="display:none"></div>
+  <div id="monthView"></div>
 </section>
 
 <section id="salary" class="screen">

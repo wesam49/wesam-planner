@@ -1,8 +1,8 @@
-Wesam Planner – Update 3
+Wesam Planner – Update 4
 
 Neu:
-- Oberfläche vollständig auf Deutsch
-- Wochenansicht im Kalender
-- Gehaltslogik für VMT, Bib inkl. Bib-mini-Stunden und Brunner
-- Finanzpläne Juli bis Dezember 2026 vorgefüllt
-- Bearbeitbare Einnahmen, Ausgaben und Sparziele
+- Kalender mit drei Ansichten: Tag, Woche und Monat
+- Monatsansicht ist standardmäßig aktiv
+- Navigation passt sich automatisch an die gewählte Ansicht an
+- Klick auf einen Tag in der Monatsansicht öffnet die Tagesansicht
+- Alle Funktionen aus Update 3 bleiben erhalten
