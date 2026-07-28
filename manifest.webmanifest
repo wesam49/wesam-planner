@@ -3,10 +3,10 @@
   "short_name": "Planner",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#f5f7fb",
-  "theme_color": "#111827",
-  "lang": "ar",
-  "dir": "rtl",
+  "background_color": "#f3f6fb",
+  "theme_color": "#0f172a",
+  "lang": "de",
+  "dir": "ltr",
   "icons": [
     {
       "src": "icon-192.png",

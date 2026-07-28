@@ -1,9 +1,8 @@
-Wesam Planner – PWA
+Wesam Planner – Update 3
 
-طريقة التشغيل:
-1) ارفع محتويات المجلد إلى GitHub Pages أو Netlify أو أي استضافة HTTPS.
-2) افتح الرابط من Safari على iPhone.
-3) اضغط Share ثم Add to Home Screen.
-
-البيانات تُحفظ محليًا على نفس الجهاز باستخدام localStorage.
-النسخة الحالية تحتوي مواعيد أغسطس 2026 والقواعد التي تم الاتفاق عليها.
+Neu:
+- Oberfläche vollständig auf Deutsch
+- Wochenansicht im Kalender
+- Gehaltslogik für VMT, Bib inkl. Bib-mini-Stunden und Brunner
+- Finanzpläne Juli bis Dezember 2026 vorgefüllt
+- Bearbeitbare Einnahmen, Ausgaben und Sparziele

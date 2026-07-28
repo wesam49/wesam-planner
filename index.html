@@ -1,209 +1,163 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="de" dir="ltr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#111827" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Wesam Planner" />
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="icon-192.png" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Wesam Planner">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <title>Wesam Planner</title>
   <style>
     :root{
-      --bg:#f5f7fb; --card:#fff; --text:#111827; --muted:#6b7280; --line:#e5e7eb;
-      --accent:#111827; --green:#16a34a; --red:#dc2626; --yellow:#f4e66a;
-      --orange:#f8c95e; --blue:#7dd3fc; --purple:#c4b5fd; --gray:#d1d5db;
-      --radius:18px;
+      --bg:#f3f6fb;--card:#ffffff;--text:#0f172a;--muted:#64748b;--line:#e2e8f0;
+      --accent:#0f172a;--green:#16a34a;--red:#dc2626;--amber:#f59e0b;--blue:#0ea5e9;
+      --radius:20px;--shadow:0 8px 28px rgba(15,23,42,.06)
     }
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif}
-    header{position:sticky;top:0;z-index:10;background:rgba(245,247,251,.92);backdrop-filter:blur(14px);padding:14px 16px 8px}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+    header{position:sticky;top:0;z-index:10;background:rgba(243,246,251,.92);backdrop-filter:blur(16px);padding:14px 14px 8px;border-bottom:1px solid rgba(226,232,240,.8)}
     .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    h1{font-size:22px;margin:0}
-    .month-nav{display:flex;align-items:center;gap:8px}
-    button,.btn{border:0;border-radius:12px;padding:10px 13px;font-weight:700;background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.06);cursor:pointer}
-    button.primary{background:var(--accent);color:white}
-    button.danger{background:#fee2e2;color:#991b1b}
-    main{padding:8px 14px 92px;max-width:980px;margin:auto}
-    .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 14px}
-    .tab{padding:10px 6px;font-size:13px;background:#fff;color:var(--muted)}
-    .tab.active{background:var(--accent);color:white}
-    .screen{display:none}.screen.active{display:block}
-    .grid{display:grid;gap:12px}
-    .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:15px;box-shadow:0 4px 16px rgba(17,24,39,.04)}
-    .metric{font-size:28px;font-weight:800;margin-top:4px}
-    .muted{color:var(--muted);font-size:13px}
-    .salary-row,.expense-row,.event-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
-    .salary-row:last-child,.expense-row:last-child,.event-row:last-child{border-bottom:0}
-    .tag{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800}
-    .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
-    .dow{font-size:11px;color:var(--muted);text-align:center;padding:3px}
-    .day{min-height:82px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:7px;cursor:pointer;overflow:hidden}
-    .day.out{opacity:.35}
-    .day.today{outline:2px solid var(--accent)}
-    .daynum{font-weight:800;font-size:13px;margin-bottom:5px}
-    .pill{font-size:10px;border-radius:7px;padding:3px 5px;margin:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
+    h1{font-size:23px;margin:0}.subtitle{font-size:13px;color:var(--muted)}
+    button{border:0;border-radius:13px;padding:10px 13px;font-weight:750;background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(15,23,42,.07)}
+    button.primary{background:var(--accent);color:#fff}button.danger{background:#fee2e2;color:#991b1b}
+    .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+    .tab{font-size:13px;color:var(--muted)}.tab.active{background:var(--accent);color:#fff}
+    main{max-width:980px;margin:auto;padding:12px 14px 98px}.screen{display:none}.screen.active{display:block}
+    .grid{display:grid;gap:12px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:15px;box-shadow:var(--shadow)}
+    .metric{font-size:28px;font-weight:850;margin-top:4px}.muted{font-size:13px;color:var(--muted)}.tiny{font-size:11px;color:var(--muted)}
+    .section-title{display:flex;justify-content:space-between;align-items:center;margin:18px 2px 8px}.section-title h2{font-size:19px;margin:0}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+    .row:last-child{border-bottom:0}.amount{font-weight:800;white-space:nowrap}.positive{color:var(--green)}.negative{color:var(--red)}
+    .week-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+    .week-range{font-weight:850;text-align:center;flex:1}
+    .week-grid{display:grid;gap:10px}
+    .day-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:13px;box-shadow:0 4px 16px rgba(15,23,42,.04)}
+    .day-card.today{outline:2px solid var(--accent)}.day-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .event{border-radius:13px;padding:10px 11px;margin-top:7px;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+    .event strong{font-size:14px}.event-time{font-weight:800;white-space:nowrap}.event-note{font-size:12px;opacity:.75;margin-top:3px}
+    .tag{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
     input,select,textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff;font-size:15px}
-    textarea{min-height:72px;resize:vertical}
-    .full{grid-column:1/-1}
-    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .section-title{display:flex;justify-content:space-between;align-items:center;margin:18px 2px 8px}
-    .section-title h2{margin:0;font-size:18px}
-    .progress{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}
-    .progress > span{display:block;height:100%;background:#22c55e}
-    .bottom{position:fixed;bottom:0;left:0;right:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(255,255,255,.96);border-top:1px solid var(--line);backdrop-filter:blur(14px)}
-    .bottom-inner{max-width:980px;margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-    .bottom button{box-shadow:none;background:transparent;color:var(--muted);font-size:12px;padding:8px 2px}
-    .bottom button.active{color:var(--text);font-weight:900}
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-end;z-index:20}
-    .modal.show{display:flex}
-    .sheet{background:var(--bg);width:100%;max-height:92vh;overflow:auto;border-radius:24px 24px 0 0;padding:18px}
-    .sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-    .sheet-head h3{margin:0}
-    .tiny{font-size:11px;color:var(--muted)}
-    @media(min-width:700px){
-      .cards{grid-template-columns:repeat(4,1fr)}
-      .modal{align-items:center;justify-content:center}
-      .sheet{max-width:620px;border-radius:24px}
-      .day{min-height:115px}
-    }
+    textarea{min-height:72px}.full{grid-column:1/-1}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .bottom{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line);backdrop-filter:blur(16px);padding:9px 12px calc(9px + env(safe-area-inset-bottom))}
+    .bottom-inner{max-width:980px;margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.bottom button{background:transparent;box-shadow:none;color:var(--muted);font-size:12px;padding:7px 2px}.bottom button.active{color:var(--text)}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.42);display:none;align-items:flex-end;z-index:20}.modal.show{display:flex}
+    .sheet{width:100%;max-height:92vh;overflow:auto;background:var(--bg);border-radius:24px 24px 0 0;padding:18px}.sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.sheet-head h3{margin:0}
+    .segmented{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#e8edf4;padding:5px;border-radius:14px}.segmented button{box-shadow:none;background:transparent}.segmented button.active{background:#fff}
+    .progress{height:10px;background:#e2e8f0;border-radius:999px;overflow:hidden}.progress span{display:block;height:100%;background:var(--green)}
+    @media(min-width:700px){.cards{grid-template-columns:repeat(4,1fr)}.modal{align-items:center;justify-content:center}.sheet{max-width:640px;border-radius:24px}.week-grid{grid-template-columns:repeat(2,1fr)}}
   </style>
 </head>
 <body>
 <header>
   <div class="top">
-    <div>
-      <h1>Wesam Planner</h1>
-      <div class="muted" id="subtitle">العمل، الرواتب، المصاريف والادخار · Update 2</div>
-    </div>
-    <div class="month-nav">
-      <button id="prevMonth">‹</button>
-      <strong id="monthLabel"></strong>
-      <button id="nextMonth">›</button>
-    </div>
+    <div><h1>Wesam Planner</h1><div class="subtitle">Arbeit, Gehalt, Ausgaben und Sparziele</div></div>
+    <button id="todayBtn">Heute</button>
   </div>
   <div class="tabs">
-    <button class="tab active" data-screen="dashboard">الرئيسية</button>
-    <button class="tab" data-screen="calendar">التقويم</button>
-    <button class="tab" data-screen="salary">الرواتب</button>
-    <button class="tab" data-screen="budget">الميزانية</button>
+    <button class="tab active" data-screen="dashboard">Übersicht</button>
+    <button class="tab" data-screen="calendar">Kalender</button>
+    <button class="tab" data-screen="salary">Gehalt</button>
+    <button class="tab" data-screen="budget">Finanzen</button>
   </div>
 </header>
 
 <main>
-  <section id="dashboard" class="screen active">
-    <div class="grid cards">
-      <div class="card"><div class="muted">الدخل المتوقع</div><div class="metric" id="dashIncome">€0</div></div>
-      <div class="card"><div class="muted">المصاريف</div><div class="metric" id="dashExpenses">€0</div></div>
-      <div class="card"><div class="muted">المتبقي</div><div class="metric" id="dashRemaining">€0</div></div>
-      <div class="card"><div class="muted">رصيد Brunner المرحّل</div><div class="metric" id="dashCarry">0 h</div></div>
-    </div>
-    <div class="section-title"><h2>ملخص الرواتب</h2></div>
-    <div class="card" id="dashboardSalary"></div>
-    <div class="section-title"><h2>المواعيد القادمة</h2></div>
-    <div class="card" id="upcoming"></div>
-  </section>
+<section id="dashboard" class="screen active">
+  <div class="grid cards">
+    <div class="card"><div class="muted">Einnahmen</div><div class="metric" id="dashIncome">0 €</div></div>
+    <div class="card"><div class="muted">Ausgaben</div><div class="metric" id="dashExpenses">0 €</div></div>
+    <div class="card"><div class="muted">Verfügbar</div><div class="metric" id="dashRemaining">0 €</div></div>
+    <div class="card"><div class="muted">Brunner-Übertrag</div><div class="metric" id="dashCarry">0 Std.</div></div>
+  </div>
+  <div class="section-title"><h2>Monatsübersicht</h2></div>
+  <div class="card" id="dashboardMonth"></div>
+  <div class="section-title"><h2>Nächste Termine</h2></div>
+  <div class="card" id="upcoming"></div>
+</section>
 
-  <section id="calendar" class="screen">
-    <div class="card">
-      <div class="calendar" id="calendarGrid"></div>
-    </div>
-    <div class="section-title">
-      <h2>مواعيد الشهر</h2>
-      <button class="primary" id="addEventBtn">+ إضافة</button>
-    </div>
-    <div class="card" id="monthEvents"></div>
-  </section>
+<section id="calendar" class="screen">
+  <div class="week-head">
+    <button id="prevWeek">‹</button><div class="week-range" id="weekRange"></div><button id="nextWeek">›</button>
+  </div>
+  <div class="section-title"><h2>Wochenansicht</h2><button class="primary" id="addEventBtn">+ Termin</button></div>
+  <div class="week-grid" id="weekGrid"></div>
+</section>
 
-  <section id="salary" class="screen">
-    <div class="card" id="salaryDetails"></div>
-    <div class="section-title"><h2>قواعد الحساب</h2></div>
-    <div class="card tiny">
-      <b>VMT:</b> 15€/h، خصم 9% على أجر الساعات فقط، +70€ بدل مواصلات، ودورة الراتب من 12 الشهر السابق حتى 11 الشهر الحالي.<br><br>
-      <b>Bibliothek:</b> 11€/h، والدفع بعد شهرين من شهر العمل.<br><br>
-      <b>Brunner:</b> 15.50€/h، ليل +15%، أحد +50%، عطلة +100%، والإضافات تتجمع. الحد الأساسي المدفوع 38 ساعة شهريًا والباقي يُرحّل.
-    </div>
-  </section>
+<section id="salary" class="screen">
+  <div class="section-title"><h2>Gehaltsberechnung</h2></div>
+  <div class="card" id="salaryDetails"></div>
+  <div class="section-title"><h2>Berechnungsregeln</h2></div>
+  <div class="card tiny">
+    <b>VMT:</b> 15,00 €/Std., 9 % Abzug nur auf den Stundenlohn, danach 70,00 € Fahrtkostenzuschuss. Abrechnungszeitraum: 12. des Vormonats bis 11. des aktuellen Monats.<br><br>
+    <b>Bib:</b> 11,00 €/Std. Die Auszahlung erfolgt zwei Monate nach dem Arbeitsmonat. Ein Teil der Bib-Stunden kann als <b>Bib mini</b> markiert werden und wird mit 15,15 €/Std. berechnet.<br><br>
+    <b>Brunner:</b> 15,50 €/Std., Nachtzuschlag 15 %, Sonntagszuschlag 50 %, Feiertagszuschlag 100 %. Zuschläge werden addiert. Pro Monat werden höchstens 38 Grundstunden ausgezahlt; weitere Stunden werden übertragen.
+  </div>
+</section>
 
-  <section id="budget" class="screen">
-    <div class="grid cards">
-      <div class="card"><div class="muted">مصاريف الشهر</div><div class="metric" id="budgetTotal">€0</div></div>
-      <div class="card"><div class="muted">ادخار مخطط</div><div class="metric" id="savingAmount">€0</div></div>
-    </div>
-    <div class="section-title"><h2>المصاريف</h2><button class="primary" id="addExpenseBtn">+ مصروف</button></div>
-    <div class="card" id="expenseList"></div>
-    <div class="section-title"><h2>أهداف الادخار</h2><button class="primary" id="addGoalBtn">+ هدف</button></div>
+<section id="budget" class="screen">
+  <div class="segmented"><button id="planBtn" class="active">Monatsplan</button><button id="goalsBtn">Sparziele</button></div>
+  <div id="planView">
+    <div class="section-title"><h2>Planung</h2><button class="primary" id="addFinanceBtn">+ Eintrag</button></div>
+    <div class="card" id="financeList"></div>
+  </div>
+  <div id="goalsView" style="display:none">
+    <div class="section-title"><h2>Sparziele</h2><button class="primary" id="addGoalBtn">+ Ziel</button></div>
     <div class="card" id="goalList"></div>
-  </section>
+  </div>
+</section>
 </main>
 
-<div class="bottom">
-  <div class="bottom-inner">
-    <button data-screen="dashboard" class="active">🏠<br>الرئيسية</button>
-    <button data-screen="calendar">📅<br>التقويم</button>
-    <button data-screen="salary">💶<br>الرواتب</button>
-    <button data-screen="budget">📊<br>الميزانية</button>
-  </div>
-</div>
+<div class="bottom"><div class="bottom-inner">
+  <button data-screen="dashboard" class="active">🏠<br>Übersicht</button>
+  <button data-screen="calendar">📅<br>Kalender</button>
+  <button data-screen="salary">💶<br>Gehalt</button>
+  <button data-screen="budget">📊<br>Finanzen</button>
+</div></div>
 
-<div class="modal" id="eventModal">
-  <div class="sheet">
-    <div class="sheet-head"><h3 id="eventModalTitle">إضافة موعد</h3><button data-close="eventModal">✕</button></div>
-    <form id="eventForm" class="form-grid">
-      <input type="hidden" id="eventId">
-      <div><label>النوع</label>
-        <select id="eventType">
-          <option>VMT</option><option>Bibliothek</option><option>Brunner</option>
-          <option>Gym</option><option>Fahrschule</option><option>Urlaub</option><option>Other</option>
-        </select>
-      </div>
-      <div><label>التاريخ</label><input type="date" id="eventDate" required></div>
-      <div><label>من</label><input type="time" id="eventStart"></div>
-      <div><label>إلى</label><input type="time" id="eventEnd"></div>
-      <div><label>الساعات المدفوعة (اختياري)</label><input type="number" step="0.25" min="0" id="paidHours" placeholder="تحسب تلقائيًا"></div>
-      <div><label>ساعات ليلية</label><input type="number" step="0.25" min="0" id="nightHours" value="0"></div>
-      <div><label>ساعات الأحد</label><input type="number" step="0.25" min="0" id="sundayHours" value="0"></div>
-      <div><label>ساعات عطلة رسمية</label><input type="number" step="0.25" min="0" id="holidayHours" value="0"></div>
-      <div class="full"><label>ملاحظة</label><textarea id="eventNote"></textarea></div>
-      <div class="full actions">
-        <button class="primary" type="submit">حفظ</button>
-        <button class="danger" type="button" id="deleteEventBtn" style="display:none">حذف</button>
-      </div>
-    </form>
-  </div>
-</div>
+<div class="modal" id="eventModal"><div class="sheet">
+  <div class="sheet-head"><h3>Termin bearbeiten</h3><button data-close="eventModal">✕</button></div>
+  <form id="eventForm" class="form-grid">
+    <input type="hidden" id="eventId">
+    <div><label>Art</label><select id="eventType"><option>VMT</option><option>Bib</option><option>Brunner</option><option>Fitnessstudio</option><option>Fahrschule</option><option>Urlaub</option><option>Sonstiges</option></select></div>
+    <div><label>Datum</label><input type="date" id="eventDate" required></div>
+    <div><label>Von</label><input type="time" id="eventStart"></div><div><label>Bis</label><input type="time" id="eventEnd"></div>
+    <div><label>Bezahlte Stunden</label><input type="number" step="0.25" min="0" id="paidHours" placeholder="automatisch"></div>
+    <div id="bibMiniWrap"><label>Davon Bib mini</label><input type="number" step="0.25" min="0" id="bibMiniHours" value="0"></div>
+    <div><label>Nachtstunden</label><input type="number" step="0.25" min="0" id="nightHours" value="0"></div>
+    <div><label>Sonntagsstunden</label><input type="number" step="0.25" min="0" id="sundayHours" value="0"></div>
+    <div><label>Feiertagsstunden</label><input type="number" step="0.25" min="0" id="holidayHours" value="0"></div>
+    <div class="full"><label>Notiz</label><textarea id="eventNote"></textarea></div>
+    <div class="full actions"><button class="primary" type="submit">Speichern</button><button class="danger" type="button" id="deleteEventBtn" style="display:none">Löschen</button></div>
+  </form>
+</div></div>
 
-<div class="modal" id="expenseModal">
-  <div class="sheet">
-    <div class="sheet-head"><h3>إضافة/تعديل مصروف</h3><button data-close="expenseModal">✕</button></div>
-    <form id="expenseForm" class="form-grid">
-      <input type="hidden" id="expenseId">
-      <div class="full"><label>البند</label><input id="expenseName" required></div>
-      <div><label>المبلغ €</label><input type="number" step="0.01" min="0" id="expenseAmount" required></div>
-      <div><label>الشهر</label><input type="month" id="expenseMonth" required></div>
-      <div class="full actions"><button class="primary" type="submit">حفظ</button><button class="danger" type="button" id="deleteExpenseBtn" style="display:none">حذف</button></div>
-    </form>
-  </div>
-</div>
+<div class="modal" id="financeModal"><div class="sheet">
+  <div class="sheet-head"><h3>Finanzeintrag</h3><button data-close="financeModal">✕</button></div>
+  <form id="financeForm" class="form-grid">
+    <input type="hidden" id="financeId">
+    <div><label>Typ</label><select id="financeType"><option value="income">Einnahme</option><option value="expense">Ausgabe</option><option value="saving">Sparbetrag</option></select></div>
+    <div><label>Monat</label><input type="month" id="financeMonth" required></div>
+    <div class="full"><label>Bezeichnung</label><input id="financeName" required></div>
+    <div><label>Betrag €</label><input type="number" step="0.01" min="0" id="financeAmount" required></div>
+    <div class="full actions"><button class="primary" type="submit">Speichern</button><button class="danger" type="button" id="deleteFinanceBtn" style="display:none">Löschen</button></div>
+  </form>
+</div></div>
 
-<div class="modal" id="goalModal">
-  <div class="sheet">
-    <div class="sheet-head"><h3>هدف ادخار</h3><button data-close="goalModal">✕</button></div>
-    <form id="goalForm" class="form-grid">
-      <input type="hidden" id="goalId">
-      <div class="full"><label>اسم الهدف</label><input id="goalName" required></div>
-      <div><label>المبلغ المطلوب €</label><input type="number" step="0.01" min="0" id="goalTarget" required></div>
-      <div><label>المبلغ المدخر €</label><input type="number" step="0.01" min="0" id="goalSaved" required></div>
-      <div class="full actions"><button class="primary" type="submit">حفظ</button><button class="danger" type="button" id="deleteGoalBtn" style="display:none">حذف</button></div>
-    </form>
-  </div>
-</div>
+<div class="modal" id="goalModal"><div class="sheet">
+  <div class="sheet-head"><h3>Sparziel</h3><button data-close="goalModal">✕</button></div>
+  <form id="goalForm" class="form-grid">
+    <input type="hidden" id="goalId">
+    <div class="full"><label>Name</label><input id="goalName" required></div>
+    <div><label>Zielbetrag €</label><input type="number" step="0.01" min="0" id="goalTarget" required></div>
+    <div><label>Bereits gespart €</label><input type="number" step="0.01" min="0" id="goalSaved" required></div>
+    <div class="full actions"><button class="primary" type="submit">Speichern</button><button class="danger" type="button" id="deleteGoalBtn" style="display:none">Löschen</button></div>
+  </form>
+</div></div>
 
 <script src="app.js"></script>
-</body>
-</html>
+</body></html>
