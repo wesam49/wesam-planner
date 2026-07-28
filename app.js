@@ -130,40 +130,74 @@ function hours(e){
  const [sh,sm]=e.start.split(':').map(Number),[eh,em]=e.end.split(':').map(Number);
  let m=(eh*60+em)-(sh*60+sm);if(m<0)m+=1440;return m/60;
 }
-function salaryFor(month){
- const [y,m]=month.split('-').map(Number),cur=new Date(y,m-1,1);
- const start=new Date(y,m-2,12),end=new Date(y,m-1,11);
- const vmt=state.events.filter(e=>e.type==='VMT'&&parseDate(e.date)>=start&&parseDate(e.date)<=end);
- const vmtHours=vmt.reduce((s,e)=>s+hours(e),0),vmtGross=vmtHours*15,vmtNet=vmtGross*.91+(vmtHours?70:0);
- const bibWorkMonth=monthKey(addMonths(cur,-2));
- const bib=state.events.filter(e=>e.type==='Bib'&&e.date.startsWith(bibWorkMonth));
- const bibTotal=bib.reduce((s,e)=>s+hours(e),0),bibMini=bib.reduce((s,e)=>s+Number(e.bibMiniHours||0),0),bibNormal=Math.max(0,bibTotal-bibMini);
- const bibPay=bibNormal*11+bibMini*15.15;
+function brunnerForWorkMonth(workMonth){
  const months=[...new Set(state.events.filter(e=>e.type==='Brunner').map(e=>e.date.slice(0,7)))].sort();
- let carry=0,br={worked:0,paidBase:0,carry:0,night:0,sunday:0,holiday:0,addons:0,total:0};
+ let carry=0;
+ let result={workMonth,worked:0,paidBase:0,carry:0,night:0,sunday:0,holiday:0,addons:0,total:0};
  for(const mk of months){
    const ev=state.events.filter(e=>e.type==='Brunner'&&e.date.startsWith(mk));
-   const worked=ev.reduce((s,e)=>s+hours(e),0),night=ev.reduce((s,e)=>s+Number(e.nightHours||0),0),sun=ev.reduce((s,e)=>s+Number(e.sundayHours||0),0),hol=ev.reduce((s,e)=>s+Number(e.holidayHours||0),0);
-   const available=carry+worked,paid=Math.min(38,available);carry=available-paid;
-   if(mk===month){const addons=night*15.5*.15+sun*15.5*.5+hol*15.5;br={worked,paidBase:paid,carry,night,sunday:sun,holiday:hol,addons,total:paid*15.5+addons}}
+   const worked=ev.reduce((s,e)=>s+hours(e),0);
+   const night=ev.reduce((s,e)=>s+Number(e.nightHours||0),0);
+   const sunday=ev.reduce((s,e)=>s+Number(e.sundayHours||0),0);
+   const holiday=ev.reduce((s,e)=>s+Number(e.holidayHours||0),0);
+   const available=carry+worked;
+   const paidBase=Math.min(38,available);
+   carry=available-paidBase;
+   const addons=night*15.5*.15+sunday*15.5*.5+holiday*15.5;
+   if(mk===workMonth){
+     result={workMonth,worked,paidBase,carry,night,sunday,holiday,addons,total:paidBase*15.5+addons};
+   }
  }
- return {vmtHours,vmtNet,start,end,bibWorkMonth,bibTotal,bibMini,bibNormal,bibPay,br,total:vmtNet+bibPay+br.total}
+ return result;
+}
+
+function payrollForPaymentMonth(month){
+ const [y,m]=month.split('-').map(Number);
+ const paymentMonthDate=new Date(y,m-1,1);
+
+ // VMT payment period: 12th of previous month to 11th of payment month.
+ const vmtStart=new Date(y,m-2,12);
+ const vmtEnd=new Date(y,m-1,11);
+ const vmtEvents=state.events.filter(e=>e.type==='VMT'&&parseDate(e.date)>=vmtStart&&parseDate(e.date)<=vmtEnd);
+ const vmtHours=vmtEvents.reduce((s,e)=>s+hours(e),0);
+ const vmtGross=vmtHours*15;
+ const vmtNet=vmtGross*.91+(vmtHours?70:0);
+
+ // Bib payment month uses work month two months earlier.
+ const bibWorkMonth=monthKey(addMonths(paymentMonthDate,-2));
+ const bibEvents=state.events.filter(e=>e.type==='Bib'&&e.date.startsWith(bibWorkMonth));
+ const bibTotal=bibEvents.reduce((s,e)=>s+hours(e),0);
+ const bibMini=bibEvents.reduce((s,e)=>s+Number(e.bibMiniHours||0),0);
+ const bibNormal=Math.max(0,bibTotal-bibMini);
+ const bibPay=bibNormal*11+bibMini*15.15;
+
+ // Brunner payment month uses previous calendar month's work.
+ const brunnerWorkMonth=monthKey(addMonths(paymentMonthDate,-1));
+ const br=brunnerForWorkMonth(brunnerWorkMonth);
+
+ return {
+   paymentMonth:month,
+   vmtStart,vmtEnd,vmtHours,vmtNet,
+   bibWorkMonth,bibTotal,bibMini,bibNormal,bibPay,
+   brunnerWorkMonth,br,
+   total:vmtNet+bibPay+br.total
+ };
+}
+
+// Backward-compatible alias: every page now uses the exact same payroll result.
+function salaryFor(month){
+ return payrollForPaymentMonth(month);
 }
 function financeSummary(month){
  const rows=state.finance.filter(x=>x.month===month),income=rows.filter(x=>x.type==='income').reduce((s,x)=>s+Number(x.amount),0),expense=rows.filter(x=>x.type==='expense').reduce((s,x)=>s+Number(x.amount),0),saving=rows.filter(x=>x.type==='saving').reduce((s,x)=>s+Number(x.amount),0);
  return {rows,income,expense,saving,remaining:income-expense};
 }
-function previousMonth(month){
- const [y,m]=month.split('-').map(Number);
- return monthKey(new Date(y,m-2,1));
-}
 function automaticEmploymentIncome(month){
- const currentSalary=salaryFor(month);
- const brunnerSalary=salaryFor(previousMonth(month));
+ const payroll=payrollForPaymentMonth(month);
  return {
-   VMT: Number(currentSalary.vmtNet||0),
-   Bib: Number(currentSalary.bibPay||0),
-   Brunner: Number(brunnerSalary.br.total||0)
+   VMT:Number(payroll.vmtNet||0),
+   Bib:Number(payroll.bibPay||0),
+   Brunner:Number(payroll.br.total||0)
  };
 }
 function employerFromName(name){
@@ -267,8 +301,8 @@ function renderSalary(){
  document.getElementById('salaryDetails').innerHTML=`
  <div class="row"><div><b>VMT</b><div class="tiny">${iso(s.start)} bis ${iso(s.end)} · ${s.vmtHours.toFixed(2)} Std.</div></div><div class="amount">${money(s.vmtNet)}</div></div>
  <div class="row"><div><b>Bib</b><div class="tiny">Arbeitsmonat ${s.bibWorkMonth} · Normal ${s.bibNormal.toFixed(2)} Std. · Bib mini ${s.bibMini.toFixed(2)} Std.</div></div><div class="amount">${money(s.bibPay)}</div></div>
- <div class="row"><div><b>Brunner</b><div class="tiny">Gearbeitet ${s.br.worked.toFixed(2)} Std. · Grundlohn ${s.br.paidBase.toFixed(2)} Std. · Übertrag ${s.br.carry.toFixed(2)} Std.</div><div class="tiny">Nacht ${s.br.night} · Sonntag ${s.br.sunday} · Feiertag ${s.br.holiday}</div></div><div class="amount">${money(s.br.total)}</div></div>
- <div class="row"><b>Berechnetes Gesamtgehalt</b><div class="metric">${money(s.total)}</div></div>`;
+ <div class="row"><div><b>Brunner</b><div class="tiny">Arbeitsmonat ${s.brunnerWorkMonth} · Gearbeitet ${s.br.worked.toFixed(2)} Std. · Grundlohn ${s.br.paidBase.toFixed(2)} Std. · Übertrag ${s.br.carry.toFixed(2)} Std.</div><div class="tiny">Nacht ${s.br.night} · Sonntag ${s.br.sunday} · Feiertag ${s.br.holiday}</div></div><div class="amount">${money(s.br.total)}</div></div>
+ <div class="row"><b>Berechnetes Gesamtgehalt</b><div class="metric">${money(s.total)}</div></div><div class="tiny" style="padding-top:10px">Diese Werte werden direkt aus den Kalenderterminen berechnet und identisch in Finanzen verwendet.</div>`;
 }
 function renderFinance(){
  const f=effectiveFinanceSummary(financeMonth);

@@ -1,11 +1,9 @@
-Wesam Planner – Update 8
+Wesam Planner – Update 9
 
-Neu:
-- Alle Termine für September 2026 sind vorgefüllt.
-- VMT: 20 Arbeitstage, jeweils 07:00–18:00 mit 8,5 bezahlten Stunden.
-- Bib: alle Schichten aus dem September-Plan.
-- Fahrschule: alle zehn Termine aus dem Plan, jeweils 18:00–20:00.
-- Fitnessstudio: 05., 12., 19. und 26. September, jeweils 13:00–16:00.
-- Keine Brunner-Schichten im September.
-- Die September-Termine werden auch bei bereits vorhandenen lokalen Daten einmalig ergänzt.
-- Doppelte identische Termine werden vermieden.
+Korrektur:
+- Kalender, Gehalt, Finanzen und Übersicht verwenden jetzt dieselbe zentrale Gehaltsberechnung.
+- Jede Änderung, Löschung oder Ergänzung eines VMT-, Bib- oder Brunner-Termins aktualisiert sofort alle Bereiche.
+- VMT wird für den Auszahlungszeitraum 12. des Vormonats bis 11. des Auszahlungsmonats berechnet.
+- Bib wird zwei Monate nach dem Arbeitsmonat berechnet, inklusive Bib-mini-Stunden.
+- Brunner wird im Folgemonat ausgezahlt; Zuschläge und Stundenübertrag werden aus dem Arbeitsmonat berechnet.
+- Gehalt und Finanzen können dadurch nicht mehr unterschiedliche Arbeitgeberbeträge anzeigen.
