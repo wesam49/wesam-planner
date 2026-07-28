@@ -71,6 +71,8 @@ let state=JSON.parse(localStorage.getItem('wesamPlannerV3')||'null')||{events:de
 let selectedDate=new Date(2026,7,10);
 let calendarMode='month';
 let currentMonth='2026-08';
+let financeMonth='2026-08';
+let selectedMultiDates=new Set();
 
 function save(){localStorage.setItem('wesamPlannerV3',JSON.stringify(state))}
 function hours(e){
@@ -102,6 +104,31 @@ function financeSummary(month){
  const rows=state.finance.filter(x=>x.month===month),income=rows.filter(x=>x.type==='income').reduce((s,x)=>s+Number(x.amount),0),expense=rows.filter(x=>x.type==='expense').reduce((s,x)=>s+Number(x.amount),0),saving=rows.filter(x=>x.type==='saving').reduce((s,x)=>s+Number(x.amount),0);
  return {rows,income,expense,saving,remaining:income-expense};
 }
+function automaticBrunnerTransfer(month){
+ const [y,m]=month.split('-').map(Number);
+ const prev=monthKey(new Date(y,m-2,1));
+ const prevSalary=salaryFor(prev);
+ const transferableHours=Math.max(0,Number(prevSalary.br.carry||0));
+ return {hours:transferableHours,amount:transferableHours*15.5};
+}
+function effectiveFinanceSummary(month){
+ const f=financeSummary(month);
+ const transfer=automaticBrunnerTransfer(month);
+ return {...f,autoBrunnerTransfer:transfer,displayIncome:f.income+transfer.amount,displayRemaining:f.income+transfer.amount-f.expense};
+}
+function savingsUntil(month,includeFuture=false){
+ const [year,mon]=month.split('-').map(Number);
+ const limit=includeFuture?`${year}-12`:month;
+ const months=[...new Set(state.finance.map(x=>x.month))].filter(m=>m.slice(0,4)===String(year)&&m<=limit).sort();
+ let total=0;
+ for(const mk of months){
+   const f=effectiveFinanceSummary(mk);
+   total+=f.saving;
+   if(f.displayRemaining<0) total+=f.displayRemaining;
+ }
+ return total;
+}
+
 function showScreen(id){document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('[data-screen]').forEach(x=>x.classList.toggle('active',x.dataset.screen===id))}
 document.querySelectorAll('[data-screen]').forEach(x=>x.onclick=()=>showScreen(x.dataset.screen));
 
@@ -171,25 +198,43 @@ function renderSalary(){
  <div class="row"><b>Berechnetes Gesamtgehalt</b><div class="metric">${money(s.total)}</div></div>`;
 }
 function renderFinance(){
- const f=financeSummary(currentMonth);
+ const f=effectiveFinanceSummary(financeMonth);
+ const monthDate=parseDate(financeMonth+'-01');
+ document.getElementById('financeMonthLabel').textContent=new Intl.DateTimeFormat('de-DE',{month:'long',year:'numeric'}).format(monthDate);
+ const autoRow=f.autoBrunnerTransfer.amount>0?`<div class="row"><span>Brunner-Übertrag <span class="tiny">(${f.autoBrunnerTransfer.hours.toFixed(2)} Std.)</span></span><span class="amount">${money(f.autoBrunnerTransfer.amount)}</span></div>`:'';
  document.getElementById('financeList').innerHTML=`
- <div class="row"><b>Einnahmen</b><span class="amount positive">${money(f.income)}</span></div>
+ <div class="row"><b>Einnahmen</b><span class="amount positive">${money(f.displayIncome)}</span></div>
+ ${autoRow}
  ${f.rows.filter(x=>x.type==='income').map(x=>`<div class="row finance-row" data-id="${x.id}"><span>${x.name}</span><span class="amount">${money(x.amount)}</span></div>`).join('')}
  <div class="row"><b>Ausgaben</b><span class="amount negative">${money(f.expense)}</span></div>
  ${f.rows.filter(x=>x.type==='expense').map(x=>`<div class="row finance-row" data-id="${x.id}"><span>${x.name}</span><span class="amount">${money(x.amount)}</span></div>`).join('')}
- <div class="row"><b>Verbleibender Betrag</b><span class="amount">${money(f.remaining)}</span></div>
+ <div class="row"><b>Verbleibender Betrag</b><span class="amount ${f.displayRemaining<0?'negative':''}">${money(f.displayRemaining)}</span></div>
  <div class="row"><b>Sparbetrag</b><span class="amount positive">${money(f.saving)}</span></div>`;
  document.querySelectorAll('.finance-row').forEach(x=>x.onclick=()=>openFinance(x.dataset.id));
  document.getElementById('goalList').innerHTML=state.goals.map(g=>{const p=Math.min(100,Number(g.saved||0)/Math.max(1,Number(g.target||0))*100);return `<div class="row goal-row" data-id="${g.id}"><div style="flex:1"><b>${g.name}</b><div class="tiny">${money(g.saved)} von ${money(g.target)}</div><div class="progress"><span style="width:${p}%"></span></div></div><b>${p.toFixed(0)} %</b></div>`}).join('');
  document.querySelectorAll('.goal-row').forEach(x=>x.onclick=()=>openGoal(x.dataset.id));
+ renderYearOverview();
+}
+function renderYearOverview(){
+ const year=financeMonth.slice(0,4);
+ const rows=[];
+ for(let m=1;m<=12;m++){
+   const mk=`${year}-${pad(m)}`,f=effectiveFinanceSummary(mk);
+   if(f.rows.length||f.autoBrunnerTransfer.amount>0){
+     rows.push(`<div class="row"><div><b>${new Intl.DateTimeFormat('de-DE',{month:'long'}).format(new Date(Number(year),m-1,1))}</b><div class="tiny">Einnahmen ${money(f.displayIncome)} · Ausgaben ${money(f.expense)}</div></div><div><div class="amount">${money(f.displayRemaining)}</div><div class="tiny">Sparen ${money(f.saving)}</div></div></div>`);
+   }
+ }
+ document.getElementById('yearList').innerHTML=rows.join('')||'Keine Daten';
 }
 function renderDashboard(){
- const f=financeSummary(currentMonth),s=salaryFor(currentMonth);
- document.getElementById('dashIncome').textContent=money(f.income);
+ const f=effectiveFinanceSummary(currentMonth),s=salaryFor(currentMonth);
+ const saved=savingsUntil(currentMonth,false);
+ const expected=savingsUntil(currentMonth,true);
+ document.getElementById('dashSaved').textContent=money(saved);
+ document.getElementById('dashExpectedSaved').textContent=money(expected);
+ document.getElementById('dashIncome').textContent=money(f.displayIncome);
  document.getElementById('dashExpenses').textContent=money(f.expense);
- document.getElementById('dashRemaining').textContent=money(f.remaining);
- document.getElementById('dashCarry').textContent=`${s.br.carry.toFixed(2)} Std.`;
- document.getElementById('dashboardMonth').innerHTML=`<div class="row"><span>Geplanter Sparbetrag</span><b class="positive">${money(f.saving)}</b></div><div class="row"><span>Berechnetes Gehalt aus Terminen</span><b>${money(s.total)}</b></div>`;
+ document.getElementById('dashboardMonth').innerHTML=`<div class="row"><span>Verbleibender Betrag</span><b class="${f.displayRemaining<0?'negative':''}">${money(f.displayRemaining)}</b></div><div class="row"><span>Berechnetes Gehalt aus Terminen</span><b>${money(s.total)}</b></div>`;
  const now=new Date(),up=state.events.filter(e=>parseDate(e.date)>=new Date(now.getFullYear(),now.getMonth(),now.getDate())).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start)).slice(0,5);
  document.getElementById('upcoming').innerHTML=up.length?up.map(e=>`<div class="row"><div><b>${e.type}</b><div class="tiny">${e.date} ${e.start||''}</div></div><span>${hours(e).toFixed(2)} Std.</span></div>`).join(''):'Keine anstehenden Termine';
 }
@@ -207,9 +252,9 @@ document.getElementById('eventForm').onsubmit=e=>{e.preventDefault();const id=do
 document.getElementById('deleteEventBtn').onclick=()=>{state.events=state.events.filter(x=>x.id!==document.getElementById('eventId').value);document.getElementById('eventModal').classList.remove('show');renderAll()};
 
 function openFinance(id){
- const x=id?state.finance.find(f=>f.id===id):null;document.getElementById('financeId').value=x?.id||'';document.getElementById('financeType').value=x?.type||'expense';document.getElementById('financeMonth').value=x?.month||currentMonth;document.getElementById('financeName').value=x?.name||'';document.getElementById('financeAmount').value=x?.amount||'';document.getElementById('deleteFinanceBtn').style.display=x?'inline-block':'none';document.getElementById('financeModal').classList.add('show')
+ const x=id?state.finance.find(f=>f.id===id):null;document.getElementById('financeId').value=x?.id||'';document.getElementById('financeType').value=x?.type||'expense';document.getElementById('financeMonth').value=x?.month||financeMonth;document.getElementById('financeName').value=x?.name||'';document.getElementById('financeAmount').value=x?.amount||'';document.getElementById('deleteFinanceBtn').style.display=x?'inline-block':'none';document.getElementById('financeModal').classList.add('show')
 }
-document.getElementById('financeForm').onsubmit=e=>{e.preventDefault();const id=document.getElementById('financeId').value||uid(),obj={id,type:document.getElementById('financeType').value,month:document.getElementById('financeMonth').value,name:document.getElementById('financeName').value,amount:Number(document.getElementById('financeAmount').value)};const i=state.finance.findIndex(x=>x.id===id);if(i>=0)state.finance[i]=obj;else state.finance.push(obj);currentMonth=obj.month;document.getElementById('financeModal').classList.remove('show');renderAll()};
+document.getElementById('financeForm').onsubmit=e=>{e.preventDefault();const id=document.getElementById('financeId').value||uid(),obj={id,type:document.getElementById('financeType').value,month:document.getElementById('financeMonth').value,name:document.getElementById('financeName').value,amount:Number(document.getElementById('financeAmount').value)};const i=state.finance.findIndex(x=>x.id===id);if(i>=0)state.finance[i]=obj;else state.finance.push(obj);financeMonth=obj.month;document.getElementById('financeModal').classList.remove('show');renderAll()};
 document.getElementById('deleteFinanceBtn').onclick=()=>{state.finance=state.finance.filter(x=>x.id!==document.getElementById('financeId').value);document.getElementById('financeModal').classList.remove('show');renderAll()};
 
 function openGoal(id){const g=id?state.goals.find(x=>x.id===id):null;document.getElementById('goalId').value=g?.id||'';document.getElementById('goalName').value=g?.name||'';document.getElementById('goalTarget').value=g?.target||'';document.getElementById('goalSaved').value=g?.saved||0;document.getElementById('deleteGoalBtn').style.display=g?'inline-block':'none';document.getElementById('goalModal').classList.add('show')}
@@ -235,7 +280,60 @@ document.getElementById('addFinanceBtn').onclick=()=>openFinance();
 document.getElementById('addGoalBtn').onclick=()=>openGoal();
 document.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>document.getElementById(x.dataset.close).classList.remove('show'));
 document.querySelectorAll('.modal').forEach(m=>m.onclick=e=>{if(e.target===m)m.classList.remove('show')});
-document.getElementById('planBtn').onclick=()=>{document.getElementById('planView').style.display='block';document.getElementById('goalsView').style.display='none';document.getElementById('planBtn').classList.add('active');document.getElementById('goalsBtn').classList.remove('active')};
-document.getElementById('goalsBtn').onclick=()=>{document.getElementById('planView').style.display='none';document.getElementById('goalsView').style.display='block';document.getElementById('goalsBtn').classList.add('active');document.getElementById('planBtn').classList.remove('active')};
+function showFinanceTab(tab){
+ document.getElementById('planView').style.display=tab==='plan'?'block':'none';
+ document.getElementById('yearView').style.display=tab==='year'?'block':'none';
+ document.getElementById('goalsView').style.display=tab==='goals'?'block':'none';
+ document.getElementById('planBtn').classList.toggle('active',tab==='plan');
+ document.getElementById('yearBtn').classList.toggle('active',tab==='year');
+ document.getElementById('goalsBtn').classList.toggle('active',tab==='goals');
+}
+document.getElementById('planBtn').onclick=()=>showFinanceTab('plan');
+document.getElementById('yearBtn').onclick=()=>showFinanceTab('year');
+document.getElementById('goalsBtn').onclick=()=>showFinanceTab('goals');
+document.getElementById('prevFinanceMonth').onclick=()=>{financeMonth=monthKey(addMonths(parseDate(financeMonth+'-01'),-1));renderAll()};
+document.getElementById('nextFinanceMonth').onclick=()=>{financeMonth=monthKey(addMonths(parseDate(financeMonth+'-01'),1));renderAll()};
+
+function renderMultiDayPicker(){
+ const value=document.getElementById('multiMonth').value||currentMonth;
+ const [y,m]=value.split('-').map(Number);
+ const first=new Date(y,m-1,1),start=mondayOf(first);
+ const picker=document.getElementById('multiDayPicker');picker.innerHTML='';
+ ['Mo','Di','Mi','Do','Fr','Sa','So'].forEach(x=>picker.insertAdjacentHTML('beforeend',`<div class="month-weekday">${x}</div>`));
+ for(let i=0;i<42;i++){
+   const d=new Date(start);d.setDate(d.getDate()+i);const ds=iso(d);
+   const outside=d.getMonth()!==first.getMonth();
+   const selected=selectedMultiDates.has(ds);
+   picker.insertAdjacentHTML('beforeend',`<button type="button" class="month-day ${outside?'outside':''}" data-date="${ds}" style="${selected?'background:#0f172a;color:white;':''}"><div class="month-day-number">${d.getDate()}</div></button>`);
+ }
+ picker.querySelectorAll('[data-date]').forEach(x=>x.onclick=()=>{const ds=x.dataset.date;if(selectedMultiDates.has(ds))selectedMultiDates.delete(ds);else selectedMultiDates.add(ds);renderMultiDayPicker()});
+ document.getElementById('selectedDaysCount').textContent=`${selectedMultiDates.size} Tage ausgewählt`;
+}
+function openMultiEvent(){
+ selectedMultiDates.clear();
+ document.getElementById('multiMonth').value=monthKey(selectedDate);
+ document.getElementById('multiType').value='Bib';
+ document.getElementById('multiStart').value='';document.getElementById('multiEnd').value='';
+ document.getElementById('multiPaidHours').value='';document.getElementById('multiBibMiniHours').value=0;
+ document.getElementById('multiNightHours').value=0;document.getElementById('multiSundayHours').value=0;document.getElementById('multiHolidayHours').value=0;document.getElementById('multiNote').value='';
+ renderMultiDayPicker();document.getElementById('multiEventModal').classList.add('show');
+}
+document.getElementById('multiEventBtn').onclick=openMultiEvent;
+document.getElementById('multiMonth').onchange=()=>{selectedMultiDates.clear();renderMultiDayPicker()};
+document.getElementById('multiEventForm').onsubmit=e=>{
+ e.preventDefault();
+ if(!selectedMultiDates.size){alert('Bitte mindestens einen Tag auswählen.');return}
+ const type=document.getElementById('multiType').value,start=document.getElementById('multiStart').value,end=document.getElementById('multiEnd').value;
+ let added=0,skipped=0;
+ [...selectedMultiDates].sort().forEach(date=>{
+   const duplicate=state.events.some(x=>x.date===date&&x.type===type&&x.start===start&&x.end===end);
+   if(duplicate){skipped++;return}
+   state.events.push({id:uid(),date,type,start,end,paidHours:Number(document.getElementById('multiPaidHours').value||0),bibMiniHours:Number(document.getElementById('multiBibMiniHours').value||0),nightHours:Number(document.getElementById('multiNightHours').value||0),sundayHours:Number(document.getElementById('multiSundayHours').value||0),holidayHours:Number(document.getElementById('multiHolidayHours').value||0),note:document.getElementById('multiNote').value});
+   added++;
+ });
+ document.getElementById('multiEventModal').classList.remove('show');renderAll();
+ if(skipped)alert(`${added} Termine gespeichert, ${skipped} Duplikate übersprungen.`);
+};
+
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 renderAll();

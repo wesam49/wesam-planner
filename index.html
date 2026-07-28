@@ -18,14 +18,14 @@
     }
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-    header{position:sticky;top:0;z-index:10;background:rgba(243,246,251,.92);backdrop-filter:blur(16px);padding:14px 14px 8px;border-bottom:1px solid rgba(226,232,240,.8)}
+    header{position:sticky;top:0;z-index:10;background:rgba(243,246,251,.92);backdrop-filter:blur(16px);padding:calc(12px + env(safe-area-inset-top)) 14px 8px;border-bottom:1px solid rgba(226,232,240,.8)}
     .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
     h1{font-size:23px;margin:0}.subtitle{font-size:13px;color:var(--muted)}
     button{border:0;border-radius:13px;padding:10px 13px;font-weight:750;background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(15,23,42,.07)}
     button.primary{background:var(--accent);color:#fff}button.danger{background:#fee2e2;color:#991b1b}
     .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
     .tab{font-size:13px;color:var(--muted)}.tab.active{background:var(--accent);color:#fff}
-    main{max-width:980px;margin:auto;padding:12px 14px 98px}.screen{display:none}.screen.active{display:block}
+    main{max-width:980px;margin:auto;padding:12px 14px calc(110px + env(safe-area-inset-bottom))}.screen{display:none}.screen.active{display:block}
     .grid{display:grid;gap:12px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}
     .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:15px;box-shadow:var(--shadow)}
     .metric{font-size:28px;font-weight:850;margin-top:4px}.muted{font-size:13px;color:var(--muted)}.tiny{font-size:11px;color:var(--muted)}
@@ -40,13 +40,13 @@
     .event{border-radius:13px;padding:10px 11px;margin-top:7px;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
     .event strong{font-size:14px}.event-time{font-weight:800;white-space:nowrap}.event-note{font-size:12px;opacity:.75;margin-top:3px}
     .tag{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800}
-    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
-    input,select,textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff;font-size:15px}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;min-width:0}label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
+    input,select,textarea{width:100%;min-width:0;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff;font-size:16px}
     textarea{min-height:72px}.full{grid-column:1/-1}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
     .bottom{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line);backdrop-filter:blur(16px);padding:9px 12px calc(9px + env(safe-area-inset-bottom))}
     .bottom-inner{max-width:980px;margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.bottom button{background:transparent;box-shadow:none;color:var(--muted);font-size:12px;padding:7px 2px}.bottom button.active{color:var(--text)}
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.42);display:none;align-items:flex-end;z-index:20}.modal.show{display:flex}
-    .sheet{width:100%;max-height:92vh;overflow:auto;background:var(--bg);border-radius:24px 24px 0 0;padding:18px}.sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.sheet-head h3{margin:0}
+    .sheet{width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - 10px);overflow:auto;background:var(--bg);border-radius:24px 24px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom))}.sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.sheet-head h3{margin:0}
     .segmented{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#e8edf4;padding:5px;border-radius:14px}.segmented button{box-shadow:none;background:transparent}.segmented button.active{background:#fff}
     .progress{height:10px;background:#e2e8f0;border-radius:999px;overflow:hidden}.progress span{display:block;height:100%;background:var(--green)}
     .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
@@ -77,10 +77,10 @@
 <main>
 <section id="dashboard" class="screen active">
   <div class="grid cards">
-    <div class="card"><div class="muted">Einnahmen</div><div class="metric" id="dashIncome">0 €</div></div>
-    <div class="card"><div class="muted">Ausgaben</div><div class="metric" id="dashExpenses">0 €</div></div>
-    <div class="card"><div class="muted">Verfügbar</div><div class="metric" id="dashRemaining">0 €</div></div>
-    <div class="card"><div class="muted">Brunner-Übertrag</div><div class="metric" id="dashCarry">0 Std.</div></div>
+    <div class="card"><div class="muted">Bisher gespart</div><div class="metric" id="dashSaved">0 €</div><div class="tiny">Bis einschließlich aktuellem Monat</div></div>
+    <div class="card"><div class="muted">Erwartetes Sparguthaben</div><div class="metric" id="dashExpectedSaved">0 €</div><div class="tiny">Bis Dezember</div></div>
+    <div class="card"><div class="muted">Einnahmen im Monat</div><div class="metric" id="dashIncome">0 €</div></div>
+    <div class="card"><div class="muted">Ausgaben im Monat</div><div class="metric" id="dashExpenses">0 €</div></div>
   </div>
   <div class="section-title"><h2>Monatsübersicht</h2></div>
   <div class="card" id="dashboardMonth"></div>
@@ -97,7 +97,7 @@
   <div class="week-head" style="margin-top:10px">
     <button id="prevPeriod">‹</button><div class="week-range" id="periodLabel"></div><button id="nextPeriod">›</button>
   </div>
-  <div class="section-title"><h2 id="calendarTitle">Monatsansicht</h2><button class="primary" id="addEventBtn">+ Termin</button></div>
+  <div class="section-title"><h2 id="calendarTitle">Monatsansicht</h2><div class="actions" style="margin:0"><button id="multiEventBtn">Mehrfach</button><button class="primary" id="addEventBtn">+ Termin</button></div></div>
   <div id="dayView" style="display:none"></div>
   <div class="week-grid" id="weekGrid" style="display:none"></div>
   <div id="monthView"></div>
@@ -115,10 +115,17 @@
 </section>
 
 <section id="budget" class="screen">
-  <div class="segmented"><button id="planBtn" class="active">Monatsplan</button><button id="goalsBtn">Sparziele</button></div>
+  <div class="segmented"><button id="planBtn" class="active">Monatsplan</button><button id="yearBtn">Jahresübersicht</button><button id="goalsBtn">Sparziele</button></div>
   <div id="planView">
+    <div class="week-head" style="margin-top:10px">
+      <button id="prevFinanceMonth">‹</button><div class="week-range" id="financeMonthLabel"></div><button id="nextFinanceMonth">›</button>
+    </div>
     <div class="section-title"><h2>Planung</h2><button class="primary" id="addFinanceBtn">+ Eintrag</button></div>
     <div class="card" id="financeList"></div>
+  </div>
+  <div id="yearView" style="display:none">
+    <div class="section-title"><h2>Jahresübersicht</h2></div>
+    <div class="card" id="yearList"></div>
   </div>
   <div id="goalsView" style="display:none">
     <div class="section-title"><h2>Sparziele</h2><button class="primary" id="addGoalBtn">+ Ziel</button></div>
@@ -148,6 +155,24 @@
     <div><label>Feiertagsstunden</label><input type="number" step="0.25" min="0" id="holidayHours" value="0"></div>
     <div class="full"><label>Notiz</label><textarea id="eventNote"></textarea></div>
     <div class="full actions"><button class="primary" type="submit">Speichern</button><button class="danger" type="button" id="deleteEventBtn" style="display:none">Löschen</button></div>
+  </form>
+</div></div>
+
+
+<div class="modal" id="multiEventModal"><div class="sheet">
+  <div class="sheet-head"><h3>Mehrere Termine anlegen</h3><button data-close="multiEventModal">✕</button></div>
+  <form id="multiEventForm" class="form-grid">
+    <div><label>Art</label><select id="multiType"><option>VMT</option><option>Bib</option><option>Brunner</option><option>Fitnessstudio</option><option>Fahrschule</option><option>Urlaub</option><option>Sonstiges</option></select></div>
+    <div><label>Monat</label><input type="month" id="multiMonth" required></div>
+    <div><label>Von</label><input type="time" id="multiStart"></div><div><label>Bis</label><input type="time" id="multiEnd"></div>
+    <div><label>Bezahlte Stunden</label><input type="number" step="0.25" min="0" id="multiPaidHours" placeholder="automatisch"></div>
+    <div><label>Davon Bib mini</label><input type="number" step="0.25" min="0" id="multiBibMiniHours" value="0"></div>
+    <div><label>Nachtstunden</label><input type="number" step="0.25" min="0" id="multiNightHours" value="0"></div>
+    <div><label>Sonntagsstunden</label><input type="number" step="0.25" min="0" id="multiSundayHours" value="0"></div>
+    <div><label>Feiertagsstunden</label><input type="number" step="0.25" min="0" id="multiHolidayHours" value="0"></div>
+    <div class="full"><label>Notiz</label><textarea id="multiNote"></textarea></div>
+    <div class="full"><div class="muted" id="selectedDaysCount">0 Tage ausgewählt</div><div id="multiDayPicker" class="month-grid" style="margin-top:8px"></div></div>
+    <div class="full actions"><button class="primary" type="submit">Alle Termine speichern</button></div>
   </form>
 </div></div>
 
