@@ -68,6 +68,54 @@ const defaultFinance=Object.entries(financeSeed).flatMap(([month,rows])=>rows.ma
 const defaultGoals=[{id:uid(),name:'Führerschein',target:3000,saved:0}];
 
 let state=JSON.parse(localStorage.getItem('wesamPlannerV3')||'null')||{events:defaultEvents,finance:defaultFinance,goals:defaultGoals};
+
+const september2026Seed = [
+  // VMT: 07:00–18:00, 8.5 paid hours
+  ...['01','02','03','04','07','08','09','10','11','14','15','16','17','18','21','22','23','24','25','28']
+    .map(day=>({date:`2026-09-${day}`,type:'VMT',start:'07:00',end:'18:00',paidHours:8.5,bibMiniHours:0,nightHours:0,sundayHours:0,holidayHours:0,note:''})),
+
+  // Bib
+  ...[
+    ['01','18:00','20:00',2],['02','18:00','20:00',2],['03','18:00','20:00',2],
+    ['05','09:00','13:00',4],['10','18:00','20:00',2],['12','09:00','13:00',4],
+    ['17','18:00','20:00',2],['19','09:00','13:00',4],['24','18:00','20:00',2],
+    ['26','09:00','13:00',4],['29','16:00','20:00',4],['30','16:00','20:00',4]
+  ].map(([day,start,end,paidHours])=>({date:`2026-09-${day}`,type:'Bib',start,end,paidHours,bibMiniHours:0,nightHours:0,sundayHours:0,holidayHours:0,note:''})),
+
+  // Fahrschule
+  ...[
+    ['07','7. Fahrstunde'],['08','8. Fahrstunde'],['09','9. Fahrstunde'],
+    ['14','10. Fahrstunde'],['15','11. Fahrstunde'],['16','12. Fahrstunde'],
+    ['21','13. Fahrstunde'],['22','14. Fahrstunde'],['23','1. Fahrstunde'],
+    ['28','2. Fahrstunde']
+  ].map(([day,note])=>({date:`2026-09-${day}`,type:'Fahrschule',start:'18:00',end:'20:00',paidHours:0,bibMiniHours:0,nightHours:0,sundayHours:0,holidayHours:0,note})),
+
+  // Fitnessstudio
+  ...['05','12','19','26']
+    .map(day=>({date:`2026-09-${day}`,type:'Fitnessstudio',start:'13:00',end:'16:00',paidHours:0,bibMiniHours:0,nightHours:0,sundayHours:0,holidayHours:0,note:''}))
+];
+
+function migrateSeptember2026(){
+  const migrationKey='wesamPlannerMigrationSeptember2026V1';
+  if(localStorage.getItem(migrationKey)==='done') return;
+
+  const sameEvent=(a,b)=>
+    a.date===b.date &&
+    a.type===b.type &&
+    (a.start||'')===(b.start||'') &&
+    (a.end||'')===(b.end||'');
+
+  september2026Seed.forEach(seed=>{
+    if(!state.events.some(existing=>sameEvent(existing,seed))){
+      state.events.push({id:uid(),...seed});
+    }
+  });
+
+  localStorage.setItem(migrationKey,'done');
+  localStorage.setItem('wesamPlannerV3',JSON.stringify(state));
+}
+migrateSeptember2026();
+
 let selectedDate=new Date(2026,7,10);
 let calendarMode='month';
 let currentMonth='2026-08';
