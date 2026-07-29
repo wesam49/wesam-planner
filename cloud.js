@@ -30,7 +30,7 @@ async function uploadLocal(force=false){
   if(!user||!window.wesamPlanner) return;
   if(!force&&!initialChoiceDone) return;
   const state=window.wesamPlanner.getState();
-  await setDoc(cloudDoc(),{state,appVersion:'16.0',schemaVersion:4,updatedAt:serverTimestamp(),updatedAtClient:Date.now()},{merge:true});
+  await setDoc(cloudDoc(),{state,appVersion:'16.1',schemaVersion:4,updatedAt:serverTimestamp(),updatedAtClient:Date.now()},{merge:true});
   setStatus('Änderungen wurden synchronisiert.','Aktiv');
 }
 async function downloadCloud(){
@@ -60,8 +60,10 @@ const uploadBtn=document.getElementById('cloudUploadLocalBtn');
 const downloadBtn=document.getElementById('cloudDownloadBtn');
 if(configured){
   const app=initializeApp(firebaseConfig); auth=getAuth(app); db=getFirestore(app);
-  getRedirectResult(auth).catch(()=>{});
-  signInBtn.onclick=async()=>{ const provider=new GoogleAuthProvider(); try{ await signInWithPopup(auth,provider); }catch(e){ if(/popup|blocked|cancelled/i.test(e.code||e.message)) await signInWithRedirect(auth,provider); else alert(e.message); } };
+  getRedirectResult(auth).catch(e=>setStatus(`Anmeldung fehlgeschlagen: ${e.message}`,'Fehler'));
+  window.addEventListener('online',()=>{ if(user&&initialChoiceDone) uploadLocal(false).catch(()=>{}); });
+  window.addEventListener('offline',()=>setStatus('Offline: Änderungen bleiben lokal und werden später synchronisiert.','Offline'));
+  signInBtn.onclick=async()=>{ const provider=new GoogleAuthProvider(); try{ await signInWithPopup(auth,provider); }catch(e){ if(/popup|blocked|cancelled/i.test(e.code||e.message)) await signInWithRedirect(auth,provider); else { setStatus(`Anmeldung fehlgeschlagen: ${e.message}`,'Fehler'); alert(`Google-Anmeldung fehlgeschlagen: ${e.message}`); } } };
   signOutBtn.onclick=()=>signOut(auth);
   uploadBtn.onclick=async()=>{ if(!confirm('Lokale Daten in die Cloud hochladen und eventuell vorhandene Cloud-Daten ersetzen?'))return; await uploadLocal(true); completeChoice(); };
   downloadBtn.onclick=async()=>{ if(!confirm('Lokale Daten durch die Cloud-Daten ersetzen?'))return; await downloadCloud(); };
