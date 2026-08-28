@@ -16,7 +16,7 @@ function monthRange(start,end){
 }
 function normalizeState(input){const r=input&&typeof input==='object'?input:{};const out={schemaVersion:6,events:Array.isArray(r.events)?r.events:[],finance:Array.isArray(r.finance)?r.finance:[],goals:Array.isArray(r.goals)?r.goals:[],bibMiniByWorkMonth:r.bibMiniByWorkMonth&&typeof r.bibMiniByWorkMonth==='object'?r.bibMiniByWorkMonth:{}};out.events=out.events.map(e=>({id:e.id||uid(),date:e.date||iso(new Date()),type:e.type||'Sonstiges',start:e.start||'',end:e.end||'',paidHours:Number(e.paidHours||0),nightHours:Number(e.nightHours||0),sundayHours:Number(e.sundayHours||0),holidayHours:Number(e.holidayHours||0),note:e.note||'',bibMiniHours:Number(e.bibMiniHours||0),workConfirmedAt:e.workConfirmedAt||null}));if(!Object.keys(out.bibMiniByWorkMonth).length){out.events.filter(e=>e.type==='Bib'&&e.bibMiniHours>0).forEach(e=>{const m=e.date.slice(0,7);out.bibMiniByWorkMonth[m]=Number(out.bibMiniByWorkMonth[m]||0)+e.bibMiniHours})}out.finance=out.finance.filter(x=>x&&x.type!=='saving'&&normName(x.name)!=='sparbetrag').map(x=>({id:x.id||uid(),month:x.month||monthKey(new Date()),type:x.type==='income'?'income':'expense',name:x.name||'Eintrag',amount:Number(x.amount||0),account:x.account||'Sparkasse',status:['unpaid','partial','paid'].includes(x.status)?x.status:(x.type==='expense'?'unpaid':'paid'),paidAmount:Number(x.paidAmount||0),seriesId:x.seriesId||null,seriesStart:x.seriesStart||null,seriesEnd:x.seriesEnd||null}));out.goals=out.goals.map((g,i)=>({id:g.id||uid(),name:g.name||'Sparziel',target:Number(g.target||0),order:Number.isFinite(Number(g.order))?Number(g.order):i})).sort((a,b)=>a.order-b.order).map((g,i)=>({...g,order:i}));return out}
 let state=normalizeState(raw);
-function save(){state=normalizeState(state);localStorage.setItem(STATE_KEY,JSON.stringify(state));localStorage.setItem(AUTO_BACKUP_KEY,JSON.stringify({exportedAt:new Date().toISOString(),appVersion:'16.3',schemaVersion:6,state}));const x=document.getElementById('backupStatus');if(x)x.textContent=`Automatisch gespeichert: ${new Intl.DateTimeFormat('de-DE',{dateStyle:'short',timeStyle:'short'}).format(new Date())}`;window.wesamCloud?.scheduleUpload?.(state)}
+function save(){state=normalizeState(state);localStorage.setItem(STATE_KEY,JSON.stringify(state));localStorage.setItem(AUTO_BACKUP_KEY,JSON.stringify({exportedAt:new Date().toISOString(),appVersion:'16.4',schemaVersion:6,state}));const x=document.getElementById('backupStatus');if(x)x.textContent=`Automatisch gespeichert: ${new Intl.DateTimeFormat('de-DE',{dateStyle:'short',timeStyle:'short'}).format(new Date())}`;window.wesamCloud?.scheduleUpload?.(state)}
 function hours(e){if(Number(e.paidHours)>0)return Number(e.paidHours);if(!e.start||!e.end)return 0;const [sh,sm]=e.start.split(':').map(Number),[eh,em]=e.end.split(':').map(Number);let m=eh*60+em-sh*60-sm;if(m<0)m+=1440;return m/60}
 function brunnerForWorkMonth(workMonth){const evAll=state.events.filter(e=>e.type==='Brunner');if(!evAll.length)return {worked:0,paidBase:0,carryIn:0,carry:0,night:0,sunday:0,holiday:0,total:0};const first=evAll.map(e=>e.date.slice(0,7)).sort()[0],target=parseDate(workMonth+'-01');if(target<parseDate(first+'-01'))return {worked:0,paidBase:0,carryIn:0,carry:0,night:0,sunday:0,holiday:0,total:0};let carry=0,res={worked:0,paidBase:0,carryIn:0,carry:0,night:0,sunday:0,holiday:0,total:0};for(let d=parseDate(first+'-01');d<=target;d=addMonths(d,1)){const mk=monthKey(d),ev=evAll.filter(e=>e.date.startsWith(mk)),worked=ev.reduce((s,e)=>s+hours(e),0),night=ev.reduce((s,e)=>s+e.nightHours,0),sunday=ev.reduce((s,e)=>s+e.sundayHours,0),holiday=ev.reduce((s,e)=>s+e.holidayHours,0),carryIn=carry,paidBase=Math.min(38,carryIn+worked);carry=Math.max(0,carryIn+worked-paidBase);if(mk===workMonth)res={worked,paidBase,carryIn,carry,night,sunday,holiday,total:paidBase*15.5+night*15.5*.15+sunday*15.5*.5+holiday*15.5}}return res}
 function payrollForPaymentMonth(month){const [y,m]=month.split('-').map(Number),payDate=new Date(y,m-1,1),vmtStart=new Date(y,m-3,12),vmtEnd=new Date(y,m-2,11),vmtEvents=state.events.filter(e=>e.type==='VMT'&&parseDate(e.date)>=vmtStart&&parseDate(e.date)<=vmtEnd),vmtHours=vmtEvents.reduce((s,e)=>s+hours(e),0),vmtNet=vmtHours*15*.91+(vmtHours?63:0),bibWorkMonth=monthKey(addMonths(payDate,-2)),bibTotal=state.events.filter(e=>e.type==='Bib'&&e.date.startsWith(bibWorkMonth)).reduce((s,e)=>s+hours(e),0),bibMini=Math.min(bibTotal,Math.max(0,Number(state.bibMiniByWorkMonth[bibWorkMonth]||0))),bibNormal=bibTotal-bibMini,bibPay=bibNormal*11+bibMini*15.15,brunnerWorkMonth=monthKey(addMonths(payDate,-1)),br=brunnerForWorkMonth(brunnerWorkMonth);return {vmtStart,vmtEnd,vmtHours,vmtNet,bibWorkMonth,bibTotal,bibMini,bibNormal,bibPay,brunnerWorkMonth,br,total:vmtNet+bibPay+br.total}}
@@ -54,8 +54,7 @@ function toggleFinanceFields(){
  recurringWrap.style.display=expense?'block':'none';
  if(!expense)financeRecurring.checked=false;
  recurringRangeWrap.style.display=expense&&financeRecurring.checked?'block':'none';
- const current=financeId.value?state.finance.find(x=>x.id===financeId.value):null;
- seriesScopeWrap.style.display=expense&&current?.seriesId?'block':'none';
+
 }
 function openFinance(id){
  const x=id?state.finance.find(f=>f.id===id):null;
@@ -70,7 +69,6 @@ function openFinance(id){
  financeRecurring.checked=!!x?.seriesId;
  financeRecurringStart.value=x?.seriesStart||x?.month||activeFinanceMonth;
  financeRecurringEnd.value=x?.seriesEnd||x?.month||activeFinanceMonth;
- financeSeriesScope.value='one';
  deleteFinanceBtn.style.display=x?'inline-block':'none';
  toggleFinanceFields();
  financeModal.classList.add('show')
@@ -103,21 +101,26 @@ financeForm.onsubmit=e=>{
    const months=monthRange(start,end);
    let seriesId=existing?.seriesId||uid();
 
-   if(existing?.seriesId&&financeSeriesScope.value==='future'){
-     const from=existing.month;
-     state.finance=state.finance.filter(x=>!(x.seriesId===existing.seriesId&&x.month>=from));
-     months.filter(m=>m>=from).forEach(m=>state.finance.push({
-       id:uid(),month:m,...common,seriesId,seriesStart:start,seriesEnd:end,
-       status:m===baseMonth?common.status:'unpaid',
-       paidAmount:m===baseMonth?common.paidAmount:0
-     }));
-   }else if(existing){
-     const i=state.finance.findIndex(x=>x.id===existing.id);
-     state.finance[i]={...existing,...common,month:baseMonth,seriesId,seriesStart:start,seriesEnd:end};
-     const existingMonths=new Set(state.finance.filter(x=>x.seriesId===seriesId).map(x=>x.month));
-     months.forEach(m=>{
-       if(!existingMonths.has(m))state.finance.push({id:uid(),month:m,...common,seriesId,seriesStart:start,seriesEnd:end,status:'unpaid',paidAmount:0});
-     });
+   if(existing?.seriesId){
+     const applyFuture=confirm('Änderung für diesen und alle folgenden Monate übernehmen?\n\nOK = Diesen und alle folgenden Monate\nAbbrechen = Nur diesen Monat');
+     if(applyFuture){
+       const from=existing.month;
+       const originalSeries=state.finance.filter(x=>x.seriesId===existing.seriesId&&x.month>=from);
+       originalSeries.forEach(x=>{
+         x.name=common.name;x.amount=common.amount;x.account=common.account;
+         x.seriesStart=start;x.seriesEnd=end;
+       });
+       const existingMonths=new Set(state.finance.filter(x=>x.seriesId===seriesId).map(x=>x.month));
+       months.filter(m=>m>=from).forEach(m=>{
+         if(!existingMonths.has(m))state.finance.push({id:uid(),month:m,...common,seriesId,seriesStart:start,seriesEnd:end,status:'unpaid',paidAmount:0});
+       });
+       state.finance=state.finance.filter(x=>x.seriesId!==seriesId||x.month<=end);
+       const cur=state.finance.find(x=>x.id===existing.id);
+       if(cur){cur.status=common.status;cur.paidAmount=common.paidAmount;}
+     }else{
+       const i=state.finance.findIndex(x=>x.id===existing.id);
+       state.finance[i]={...existing,...common,month:baseMonth,seriesId,seriesStart:existing.seriesStart||start,seriesEnd:existing.seriesEnd||end};
+     }
    }else{
      months.forEach(m=>state.finance.push({
        id:uid(),month:m,...common,seriesId,seriesStart:start,seriesEnd:end,
@@ -138,9 +141,10 @@ financeForm.onsubmit=e=>{
 deleteFinanceBtn.onclick=()=>{
  const current=state.finance.find(x=>x.id===financeId.value);
  if(!current)return;
- if(current.seriesId&&financeSeriesScope.value==='future'){
-   if(!confirm('Diese Ausgabe ab diesem Monat bis zum Ende der Serie löschen?'))return;
-   state.finance=state.finance.filter(x=>!(x.seriesId===current.seriesId&&x.month>=current.month));
+ if(current.seriesId){
+   const deleteFuture=confirm('Löschen für diesen und alle folgenden Monate?\n\nOK = Diesen und alle folgenden Monate\nAbbrechen = Nur diesen Monat');
+   if(deleteFuture)state.finance=state.finance.filter(x=>!(x.seriesId===current.seriesId&&x.month>=current.month));
+   else state.finance=state.finance.filter(x=>x.id!==current.id);
  }else{
    state.finance=state.finance.filter(x=>x.id!==current.id);
  }
@@ -159,5 +163,5 @@ async function enableWorkNotifications(){if(!('Notification'in window))return al
 function updateNotificationButton(){const b=document.getElementById('enableWorkNotificationsBtn');if(!b)return;const ok='Notification'in window&&Notification.permission==='granted';b.textContent=ok?'Benachrichtigungen aktiv':'Benachrichtigungen aktivieren';b.disabled=ok}
 function scheduleWorkReminders(){workReminderTimers.forEach(clearTimeout);workReminderTimers=[];if(!('Notification'in window)||Notification.permission!=='granted')return;const now=Date.now();state.events.filter(e=>isWorkEvent(e)&&!e.workConfirmedAt&&workEndDate(e)&&workEndDate(e).getTime()>now).forEach(e=>{const delay=workEndDate(e).getTime()-now;if(delay>2147483647)return;workReminderTimers.push(setTimeout(async()=>{try{const reg=await navigator.serviceWorker?.ready;if(reg)reg.showNotification(`${e.type} beendet`,{body:'Arbeitszeit jetzt bestätigen oder im Kalender anpassen.',tag:`work-${e.id}`,data:{url:'./?screen=dashboard'}});else new Notification(`${e.type} beendet`,{body:'Arbeitszeit jetzt bestätigen oder im Kalender anpassen.'})}catch{}},delay))})}
 document.getElementById('enableWorkNotificationsBtn').onclick=enableWorkNotifications;updateNotificationButton();setInterval(()=>{renderWorkCheck();scheduleWorkReminders()},60000);setTimeout(scheduleWorkReminders,1500);
-function exportBackup(){const blob=new Blob([JSON.stringify({product:'Wesam Planner',appVersion:'16.3',schemaVersion:6,exportedAt:new Date().toISOString(),state},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`WesamPlanner_Backup_${iso(new Date())}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}async function importBackupFile(file){if(!file)return;let p;try{p=JSON.parse(await file.text())}catch{return alert('Die Datei ist kein gültiges JSON-Backup.')}const c=p.state||p;if(!Array.isArray(c.events)||!Array.isArray(c.finance)||!Array.isArray(c.goals))return alert('Ungültige Wesam-Planner-Daten.');if(confirm('Aktuelle lokale Daten durch dieses Backup ersetzen?')){state=normalizeState(c);renderAll();alert('Backup wiederhergestellt.')}}exportBackupBtn.onclick=exportBackup;importBackupBtn.onclick=()=>importBackupInput.click();importBackupInput.onchange=async e=>{await importBackupFile(e.target.files?.[0]);e.target.value=''};
-window.wesamPlanner={getState:()=>structuredClone(state),replaceState:(next,{fromCloud=false}={})=>{state=normalizeState(next);localStorage.setItem(STATE_KEY,JSON.stringify(state));localStorage.setItem(AUTO_BACKUP_KEY,JSON.stringify({exportedAt:new Date().toISOString(),appVersion:'16.3',schemaVersion:6,state}));renderAll();if(fromCloud)window.wesamCloud?.markRemoteApplied?.()},normalizeState};if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');renderAll();
+function exportBackup(){const blob=new Blob([JSON.stringify({product:'Wesam Planner',appVersion:'16.4',schemaVersion:6,exportedAt:new Date().toISOString(),state},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`WesamPlanner_Backup_${iso(new Date())}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}async function importBackupFile(file){if(!file)return;let p;try{p=JSON.parse(await file.text())}catch{return alert('Die Datei ist kein gültiges JSON-Backup.')}const c=p.state||p;if(!Array.isArray(c.events)||!Array.isArray(c.finance)||!Array.isArray(c.goals))return alert('Ungültige Wesam-Planner-Daten.');if(confirm('Aktuelle lokale Daten durch dieses Backup ersetzen?')){state=normalizeState(c);renderAll();alert('Backup wiederhergestellt.')}}exportBackupBtn.onclick=exportBackup;importBackupBtn.onclick=()=>importBackupInput.click();importBackupInput.onchange=async e=>{await importBackupFile(e.target.files?.[0]);e.target.value=''};
+window.wesamPlanner={getState:()=>structuredClone(state),replaceState:(next,{fromCloud=false}={})=>{state=normalizeState(next);localStorage.setItem(STATE_KEY,JSON.stringify(state));localStorage.setItem(AUTO_BACKUP_KEY,JSON.stringify({exportedAt:new Date().toISOString(),appVersion:'16.4',schemaVersion:6,state}));renderAll();if(fromCloud)window.wesamCloud?.markRemoteApplied?.()},normalizeState};if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');renderAll();
