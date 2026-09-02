@@ -1,4 +1,4 @@
-const CACHE='wesam-planner-v16-6';
+const CACHE='wesam-planner-v16-7';
 const ASSETS=['./','index.html','app.js','cloud.js','firebase-config.js','manifest.webmanifest','icon-192.png','icon-512.png'];
 self.addEventListener('install',event=>{self.skipWaiting();event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});
