@@ -1,26 +1,16 @@
-# WesStudy v4.2 – Google Cloud Sync
+WesStudy v5.4.4
 
-Diese Version ist bereits mit dem Firebase-Projekt `wesstudy-1` verbunden.
-
-## Firebase Voraussetzungen
-- Google Sign-In: aktiviert
-- Authorized Domain: `wesam49.github.io`
-- Cloud Firestore: `(default)`
-- Firestore-Regeln: Zugriff nur auf `/users/{uid}/...` für den angemeldeten Benutzer
-
-## Erstes Anmelden
-1. WesStudy öffnen.
-2. Einstellungen öffnen.
-3. **Mit Google anmelden** drücken.
-4. Beim ersten Login werden vorhandene lokale WesStudy-Daten automatisch in Firestore gespeichert, wenn dort noch keine Cloud-Daten existieren.
-5. Danach werden Änderungen automatisch synchronisiert.
-
-## GitHub Pages
-Alle Dateien aus diesem ZIP in das Root-Verzeichnis des `WesStudy`-Repositories hochladen und vorhandene Dateien ersetzen.
-
-Zum Umgehen alter Browser-Caches:
-`https://wesam49.github.io/WesStudy/?v=4.1`
+Änderungen:
+- Wochenstatus: Gelb bei noch offenen Lernstunden, Grün nur bei vollständig geplanter Woche.
+- Desktop-Sidebar neu angeordnet, kein Text-Overlap, geringerer Abstand zum Hauptinhalt.
+- Sidebar im Light Mode an das helle Design angepasst.
+- Nachholen-Bereich klar als eigener Abschnitt mit Rahmen abgesetzt.
+- Fortschritt-zum-Lernziel-Karte im Light Mode hell und kontrastreich gestaltet.
+- Letzte Sessions: unterschiedliche Fach-Icons je nach Fachtyp; Farbe weiterhin aus „Fach bearbeiten“.
+- Dark Mode weiterhin separat abgestimmt.
 
 
-## v4.4 – Tagesplan
-Neue unabhängige Tagesplan-Seite mit Timeline, Kategorien, Wiederholungen, Vorlagen und Tages-Lernziel-Vergleich. Der Tagesplan startet keinen Timer und verändert keine Lernstunden.
+## v5.4.6
+- Wochenansicht: Long-Press auf Mobilgeräten öffnet Bearbeiten/Löschen.
+- Desktop: Rechtsklick auf einen Termin öffnet Bearbeiten/Löschen.
+- Normaler Klick behält die bisherige Tagesnavigation.
