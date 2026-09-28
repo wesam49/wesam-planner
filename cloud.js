@@ -1,3 +1,4 @@
+
 import { firebaseConfig } from './firebase-config.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
@@ -14,6 +15,8 @@ function cloudDoc(){ return user ? doc(db,'users',user.uid,'planner','main') : n
 function validState(s){ return s && Array.isArray(s.events) && Array.isArray(s.finance) && Array.isArray(s.goals); }
 function updateUserUI(){
   const title=document.getElementById('cloudUserTitle'),signIn=document.getElementById('cloudSignInBtn'),signOutBtn=document.getElementById('cloudSignOutBtn');
+  if(signIn){ signIn.type='button'; signIn.disabled=false; }
+  if(signOutBtn) signOutBtn.type='button';
   if(!configured){ if(title)title.textContent='Firebase noch nicht eingerichtet'; if(signIn)signIn.disabled=true; setStatus('Trage zuerst deine Firebase-Konfiguration in firebase-config.js ein.','Setup'); return; }
   if(user){ if(title)title.textContent=user.displayName||user.email||'Angemeldet'; if(signIn)signIn.style.display='none'; if(signOutBtn)signOutBtn.style.display='inline-block'; }
   else { if(title)title.textContent='Nicht angemeldet'; if(signIn)signIn.style.display='inline-block'; if(signOutBtn)signOutBtn.style.display='none'; if(firstRow())firstRow().style.display='none'; setStatus('Lokale Daten bleiben auf diesem Gerät gespeichert.','Aus'); }
@@ -30,7 +33,7 @@ async function uploadLocal(force=false){
   if(!user||!window.wesamPlanner) return;
   if(!force&&!initialChoiceDone) return;
   const state=window.wesamPlanner.getState();
-  await setDoc(cloudDoc(),{state,appVersion:'16.1',schemaVersion:4,updatedAt:serverTimestamp(),updatedAtClient:Date.now()},{merge:true});
+  await setDoc(cloudDoc(),{state,appVersion:'16.20',schemaVersion:8,updatedAt:serverTimestamp(),updatedAtClient:Date.now()},{merge:true});
   setStatus('Änderungen wurden synchronisiert.','Aktiv');
 }
 async function downloadCloud(){
@@ -50,7 +53,7 @@ function startLiveSync(){
   },err=>setStatus(`Synchronisierungsfehler: ${err.message}`,'Fehler'));
 }
 window.wesamCloud={
-  scheduleUpload(state){ if(!user||!initialChoiceDone||remoteApplying)return; clearTimeout(uploadTimer); uploadTimer=setTimeout(()=>uploadLocal(false).catch(e=>setStatus(`Upload fehlgeschlagen: ${e.message}`,'Fehler')),700); },
+  scheduleUpload(){ if(!user||!initialChoiceDone||remoteApplying)return; clearTimeout(uploadTimer); uploadTimer=setTimeout(()=>uploadLocal(false).catch(e=>setStatus(`Upload fehlgeschlagen: ${e.message}`,'Fehler')),700); },
   markRemoteApplied(){ remoteApplying=false; }
 };
 
@@ -58,14 +61,42 @@ const signInBtn=document.getElementById('cloudSignInBtn');
 const signOutBtn=document.getElementById('cloudSignOutBtn');
 const uploadBtn=document.getElementById('cloudUploadLocalBtn');
 const downloadBtn=document.getElementById('cloudDownloadBtn');
+
+async function startGoogleSignIn(){
+  if(!auth || !signInBtn) return;
+  signInBtn.disabled=true;
+  setStatus('Google-Anmeldung wird geöffnet …','Anmeldung');
+  const provider=new GoogleAuthProvider();
+  provider.setCustomParameters({prompt:'select_account'});
+  const standalone=window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone===true;
+  const mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  try{
+    // Desktop browsers: redirect avoids blocked/ignored popup clicks.
+    if(!mobile && !standalone){
+      await signInWithRedirect(auth,provider);
+      return;
+    }
+    await signInWithPopup(auth,provider);
+  }catch(e){
+    const msg=String(e?.code||e?.message||e);
+    if(!/cancelled-popup-request|popup-closed-by-user/i.test(msg)){
+      try{ await signInWithRedirect(auth,provider); return; }catch(e2){ setStatus(`Anmeldung fehlgeschlagen: ${e2.message}`,'Fehler'); }
+    }else setStatus('Google-Anmeldung wurde abgebrochen.','Aus');
+  }finally{
+    if(signInBtn && !user) signInBtn.disabled=false;
+  }
+}
+
 if(configured){
   const app=initializeApp(firebaseConfig); auth=getAuth(app); db=getFirestore(app);
-  getRedirectResult(auth).catch(e=>setStatus(`Anmeldung fehlgeschlagen: ${e.message}`,'Fehler'));
+  getRedirectResult(auth).then(result=>{
+    if(result?.user) setStatus('Google-Anmeldung erfolgreich. Cloud wird geladen …','Aktiv');
+  }).catch(e=>setStatus(`Anmeldung fehlgeschlagen: ${e.message}`,'Fehler'));
   window.addEventListener('online',()=>{ if(user&&initialChoiceDone) uploadLocal(false).catch(()=>{}); });
   window.addEventListener('offline',()=>setStatus('Offline: Änderungen bleiben lokal und werden später synchronisiert.','Offline'));
-  signInBtn.onclick=async()=>{ const provider=new GoogleAuthProvider(); try{ await signInWithPopup(auth,provider); }catch(e){ if(/popup|blocked|cancelled/i.test(e.code||e.message)) await signInWithRedirect(auth,provider); else { setStatus(`Anmeldung fehlgeschlagen: ${e.message}`,'Fehler'); alert(`Google-Anmeldung fehlgeschlagen: ${e.message}`); } } };
-  signOutBtn.onclick=()=>signOut(auth);
-  uploadBtn.onclick=async()=>{ if(!confirm('Lokale Daten in die Cloud hochladen und eventuell vorhandene Cloud-Daten ersetzen?'))return; await uploadLocal(true); completeChoice(); };
-  downloadBtn.onclick=async()=>{ if(!confirm('Lokale Daten durch die Cloud-Daten ersetzen?'))return; await downloadCloud(); };
+  if(signInBtn){ signInBtn.type='button'; signInBtn.onclick=startGoogleSignIn; }
+  if(signOutBtn){ signOutBtn.type='button'; signOutBtn.onclick=()=>signOut(auth); }
+  if(uploadBtn) uploadBtn.onclick=async()=>{ if(!confirm('Lokale Daten in die Cloud hochladen und eventuell vorhandene Cloud-Daten ersetzen?'))return; await uploadLocal(true); completeChoice(); };
+  if(downloadBtn) downloadBtn.onclick=async()=>{ if(!confirm('Lokale Daten durch die Cloud-Daten ersetzen?'))return; await downloadCloud(); };
   onAuthStateChanged(auth,async u=>{ user=u; initialChoiceDone=false; unsubscribe?.(); unsubscribe=null; updateUserUI(); if(user) try{await inspectCloud()}catch(e){setStatus(`Cloud konnte nicht geladen werden: ${e.message}`,'Fehler')} });
 }else updateUserUI();
