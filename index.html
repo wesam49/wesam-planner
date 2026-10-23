@@ -825,6 +825,74 @@ input,select,textarea{border-radius:13px!important;border:1px solid rgba(15,39,7
   border-top-color:rgba(255,255,255,.08);
 }
 
+
+
+/* v5.7.2 */
+.open-days-summary{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 12px;margin-bottom:8px;border-radius:14px;
+  background:rgba(213,154,45,.08);border:1px solid rgba(213,154,45,.16);
+}
+.week-block.overnight-carry{
+  border-top-style:dashed!important;
+}
+.overnight-hint{
+  color:var(--muted);
+}
+@media(max-width:700px){
+  .open-days-summary{align-items:flex-start;flex-direction:column}
+}
+
+
+
+/* v5.7.3 — real calendar scroll + inline Open Days */
+.week-grid-shell{
+  max-height:72vh !important;
+  overflow-y:auto !important;
+  overflow-x:auto !important;
+  display:block !important;
+  position:relative !important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.week-grid{
+  min-height:1344px !important; /* 24h × 56px */
+  align-items:stretch !important;
+}
+.week-grid .wg-time-col,
+.week-grid .wg-day-col{
+  min-height:1344px !important;
+}
+.week-grid .wg-head,
+.week-grid .wg-head-left{
+  position:sticky !important;
+  top:0 !important;
+  z-index:20 !important;
+  background:var(--panel) !important;
+}
+.week-grid .wg-head-left{
+  left:0 !important;
+  z-index:22 !important;
+}
+@media(max-width:700px){
+  .week-grid-shell{
+    max-height:64vh !important;
+  }
+}
+
+/* Open Days directly before Lernumfang */
+#olderOpenStudyDaysWrap{
+  margin-top:18px !important;
+  padding-top:18px !important;
+  border-top:1px solid rgba(17,38,66,.08) !important;
+}
+#olderOpenStudyDaysWrap.hidden{
+  display:none !important;
+}
+.open-days-summary{
+  margin-bottom:10px !important;
+}
+
 </style>
 </head>
 <body>
@@ -898,20 +966,21 @@ input,select,textarea{border-radius:13px!important;border:1px solid rgba(15,39,7
       <div class="card" id="pastStudyDaysCard" style="margin-bottom:16px">
         <div class="section-head"><div><h2>Vergangene Tage</h2><div class="muted">Geplant, erledigt und offen – damit du siehst, wo etwas fehlt.</div></div></div>
         <div id="pastStudyDays"></div>
-        <div class="older-open-days" id="olderOpenStudyDaysWrap" style="margin-top:18px">
-          <div class="section-head older-open-days-head">
-            <div>
-              <h3 style="margin:0">Offene Tage</h3>
-              <div class="muted">Ältere unvollständige Lerntage bleiben hier sichtbar, bis du sie abgeschlossen hast.</div>
-            </div>
-          </div>
-          <div id="olderOpenStudyDays"></div>
-        </div>
         <div class="dashboard-status" id="pastStudyBacklog" style="margin-top:12px"></div>
       </div>
       
 
-      <div class="card" id="studyTargetCard" style="margin-bottom:16px">
+      
+      <div class="card older-open-days" id="olderOpenStudyDaysWrap" style="margin-bottom:16px">
+        <div class="section-head older-open-days-head">
+          <div>
+            <h2 style="margin:0">Open Days</h2>
+            <div class="muted">Alle offenen vergangenen Lerntage gesammelt – sie bleiben hier, bis sie 100% erreicht haben.</div>
+          </div>
+        </div>
+        <div id="olderOpenStudyDays"></div>
+      </div>
+<div class="card" id="studyTargetCard" style="margin-bottom:16px">
         <div class="section-head">
           <div>
             <h2>Lernumfang</h2>
@@ -1462,7 +1531,15 @@ function syncSemesterPlanMissingDaysFromDailyStudy(start=state.semester?.start,e
 }
 function dailyPlanState(){if(!state.dailyPlan)state.dailyPlan={items:[],templates:[]};if(!Array.isArray(state.dailyPlan.items))state.dailyPlan.items=[];if(!Array.isArray(state.dailyPlan.templates))state.dailyPlan.templates=[];return state.dailyPlan}
 function timeToMins(v){if(!v||!v.includes(':'))return 0;const [h,m]=v.split(':').map(Number);return h*60+m}
-function dayPlanDuration(x){return Math.max(0,timeToMins(x.end)-timeToMins(x.start))}
+function clockDuration(start,end){
+  if(!start||!end)return 0;
+  const st=timeToMins(start),en=timeToMins(end);
+  return Math.max(0,en>=st?en-st:(1440-st)+en);
+}
+function dayPlanDuration(x){return clockDuration(x.start,x.end)}
+function shiftISODate(date,delta){
+  const d=parseDate(date);d.setDate(d.getDate()+Number(delta||0));return localISO(d);
+}
 function dayPlanItems(date=dayPlanDate){return dailyPlanState().items.filter(x=>x.date===date).sort((a,b)=>(a.start||'99:99').localeCompare(b.start||'99:99'))}
 function studyPlanForDate(date){if(state.holiday&&overlapDate(date,state.holiday.start,state.holiday.end))return Number(state.holiday.days?.[date]||0)*60;return Number(state.semesterPlan?.days?.[date]||0)*60}
 function renderDailyPlan(){const wrap=$('#dayPlanTimeline');if(!wrap)return;const d=parseDate(dayPlanDate),items=dayPlanItems(),total=items.reduce((a,x)=>a+dayPlanDuration(x),0),done=items.filter(x=>x.done).reduce((a,x)=>a+dayPlanDuration(x),0),study=items.filter(itemCountsAsLearning).reduce((a,x)=>a+dayPlanDuration(x),0),target=studyPlanForDate(dayPlanDate);$('#dayPlanDateLabel').textContent=(dayPlanDate===todayISO()?'Heute · ':'')+new Intl.DateTimeFormat('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}).format(d);$('#dayPlanTotal').textContent=minsText(total);$('#dayPlanDone').textContent=minsText(done);$('#dayPlanCount').textContent=items.length;$('#dayPlanStudy').textContent=minsText(study);const st=$('#dayPlanLearningStatus');if(target){const diff=target-study;st.classList.toggle('good',diff<=0);st.innerHTML=`<strong> Lernziel laut ${state.holiday&&overlapDate(dayPlanDate,state.holiday.start,state.holiday.end)?'Ferienplan':'Semesterplanung'}: ${minsText(target)}</strong><div class="muted" style="margin-top:5px">Im Tagesplan eingeplant: ${minsText(study)} · ${diff>0?`Noch ${minsText(diff)} einplanen`:'Lernziel vollständig eingeplant ✓'}</div>`}else{st.classList.remove('good');st.innerHTML=`<strong> Für diesen Tag ist kein Lernziel im Ferien-/Semesterplan eingetragen.</strong><div class="muted" style="margin-top:5px">Du kannst trotzdem Lernblöcke frei in deinen Tagesplan setzen.</div>`}wrap.innerHTML=items.length?items.map(x=>{const [icon,label]=dayPlanTypes[x.type]||dayPlanTypes.other;return `<div class="dayplan-item ${x.done?'done':''}"><div class="dayplan-time">${esc(x.start)}<div class="muted" style="font-size:.72rem">bis ${esc(x.end)}</div></div><div><div class="dayplan-title">${icon?icon+' ':''}${esc(x.title)}</div><div class="dayplan-sub">${label} · ${minsText(dayPlanDuration(x))}${x.repeatMode==='biweekly'?' · alle 2 Wochen':x.repeatMode==='weekly'?' · wöchentlich':x.repeatMode==='daily'?' · täglich':x.repeatMode==='weekdays'?' · Mo–Fr':''}</div></div><div class="dayplan-actions"><input class="dayplan-check" type="checkbox" data-dayplan-done="${x.id}" ${x.done?'checked':''} aria-label="Erledigt"><button class="mini-btn" data-dayplan-edit="${x.id}">Bearbeiten</button></div></div>`}).join(''):`<div class="card empty"><div class="empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 3v4M16 3v4M3 10h18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div><h3>Noch nichts geplant</h3><p>Füge Lernen, Gym, Lesen, Uni, Arbeit oder andere Aktivitäten hinzu.</p><button class="btn primary" id="dayPlanEmptyAdd">+ Erste Aktivität</button></div>`;renderDayTemplates()}
@@ -1507,7 +1584,7 @@ $('#dayPlanTimeline').addEventListener('change',e=>{if(!e.target.matches('[data-
 $('#dayPlanForm').addEventListener('submit',e=>{
   if(e.submitter?.value==='cancel')return;e.preventDefault();
   const start=$('#dayPlanStart').value,end=$('#dayPlanEnd').value;
-  if(timeToMins(end)<=timeToMins(start))return toast('Die Endzeit muss nach der Startzeit liegen.');
+  // If Endzeit is earlier than/equal to Startzeit, it means the activity ends on the next day.
   const id=$('#dayPlanItemId').value,type=$('#dayPlanType').value,title=$('#dayPlanTitle').value.trim(),date=$('#dayPlanItemDate').value,mode=$('#dayPlanRepeat').value,until=$('#dayPlanRepeatUntil').value;
   if(!title||!date)return;
   const plan=dailyPlanState(),affected=new Set();
@@ -1525,7 +1602,7 @@ $('#dayPlanForm').addEventListener('submit',e=>{
         const oldDate=x.date,oldStart=x.start;
         const dateDelta=Math.round((parseDate(date)-parseDate(oldDate))/86400000);
         const timeDelta=timeToMins(start)-timeToMins(oldStart);
-        const newDuration=timeToMins(end)-timeToMins(start);
+        const newDuration=clockDuration(start,end);
         sameGroup.forEach(i=>{
           affected.add(i.date);
           const nd=parseDate(i.date);nd.setDate(nd.getDate()+dateDelta);
@@ -2208,10 +2285,25 @@ function renderWeekPlanner(){
     return `<div class="wg-head"><div class="wg-day-name">${esc(weekdayFmt.format(parseDate(date)))}<br>${esc(shortFmt.format(parseDate(date)).split(', ').pop()||fmtDate(date))}</div>${dayHeaderSummaryHtml(date,targetDay,plannedDay)}</div>`;
   }).join('');
   const colHtml=dates.map(date=>{
-    const raw=dayPlanItems(date).filter(x=>x.start&&x.end).map((x,idx)=>{
-      let st=timeToMins(x.start),en=timeToMins(x.end); if(st<timeStart) st+=1440; if(en<=st) en+=1440;
-      return {x,idx,st,en};
-    }).sort((a,b)=>a.st-b.st||a.en-b.en||a.idx-b.idx);
+    const own=dayPlanItems(date).filter(x=>x.start&&x.end);
+    const prevDate=shiftISODate(date,-1);
+    const carry=dayPlanItems(prevDate).filter(x=>x.start&&x.end&&timeToMins(x.end)<=timeToMins(x.start));
+    const raw=[
+      ...own.map((x,idx)=>{
+        const st=timeToMins(x.start),endRaw=timeToMins(x.end),overnight=endRaw<=st;
+        return {x,idx,st,en:overnight?1440:endRaw,displayStart:x.start,displayEnd:x.end,segment:'start'};
+      }),
+      ...carry.map((x,idx)=>({
+        x:{...x,_carryFrom:prevDate},
+        idx:10000+idx,
+        st:0,
+        en:timeToMins(x.end),
+        displayStart:'00:00',
+        displayEnd:x.end,
+        segment:'carry'
+      }))
+    ].filter(ev=>ev.en>ev.st)
+     .sort((a,b)=>a.st-b.st||a.en-b.en||a.idx-b.idx);
 
     // iPhone-like overlap layout: overlapping events are shown side-by-side.
     const laid=[];
@@ -2236,19 +2328,21 @@ function renderWeekPlanner(){
     }
 
     const items=laid.map(ev=>{
-      const {x,st,en,col,cols}=ev;
+      const {x,st,en,col,cols,displayStart,displayEnd,segment}=ev;
       const top=((st-timeStart)/totalMins)*100, h=Math.max(2,((en-st)/totalMins)*100);
       const cls=weekBlockClass(x.type);
       const sub=(dayPlanTypes[x.type]||dayPlanTypes.other)[1];
       const gap=4;
       const width=`calc((100% - ${gap*(cols-1)}px) / ${cols})`;
       const left=`calc(${(col/cols)*100}% + ${col?gap*col/cols:0}px)`;
-      return `<div class="week-block ${cls} ${cols>1?'overlap':''}" ${x.id?`data-week-item-id="${esc(x.id)}"`:''} data-week-item-date="${esc(date)}" style="top:${top}%;height:${h}%;left:${left};width:${width};right:auto" title="${esc(x.title)}"><div class="wb-time">${esc(x.start)} – ${esc(x.end)}</div><div class="wb-title">${esc(x.title)}</div><div class="wb-sub">${esc(sub)}</div></div>`;
+      const editDate=x._carryFrom||date;
+      const segmentLabel=segment==='carry'?' · Fortsetzung':'';
+      return `<div class="week-block ${cls} ${cols>1?'overlap':''} ${segment==='carry'?'overnight-carry':''}" ${x.id?`data-week-item-id="${esc(x.id)}"`:''} data-week-item-date="${esc(editDate)}" style="top:${top}%;height:${h}%;left:${left};width:${width};right:auto" title="${esc(x.title)}${segmentLabel}"><div class="wb-time">${esc(displayStart||x.start)} – ${esc(displayEnd||x.end)}</div><div class="wb-title">${esc(x.title)}</div><div class="wb-sub">${esc(sub)}${segmentLabel}</div></div>`;
     }).join('');
     return `<div class="wg-day-col" data-week-date="${date}" style="height:${canvasHeight}px">${items}</div>`;
   }).join('');
   const timesHtml=labels.map(x=>`<div class="wg-time-label" style="top:${x.top}%">${x.label}</div>`).join('');
-  document.getElementById('weekOverview').innerHTML=`<div class="week-board"><div class="week-metrics">${metricCard('Lernziel',minsText(target))}${metricCard('Geplant',minsText(planned))}${metricCard('Noch offen',minsText(open))}${metricCard('Nachholen offen',minsText(makeupOpen))}</div><div class="week-summary-bar ${open?'pending':'complete'}">Wochenplanung: Soll ${minsText(target)} · als Lernen eingeplant ${minsText(planned)} · ${open?`noch offen ${minsText(open)}`:'vollständig eingeplant ✓'}</div><div class="week-grid-shell"><div class="week-grid"><div class="wg-head-left">Uhrzeit</div>${headHtml}<div class="wg-time-col" style="height:${canvasHeight}px">${timesHtml}</div>${colHtml}</div></div><div class="week-legend"><span class="lg u"><i></i> Uni / Pflichttermine</span><span class="lg s"><i></i> Lernen</span><span class="lg m"><i></i> Nachholen</span><span class="lg g"><i></i> Gym</span></div></div>`;
+  document.getElementById('weekOverview').innerHTML=`<div class="week-board"><div class="week-metrics">${metricCard('Lernziel',minsText(target))}${metricCard('Geplant',minsText(planned))}${metricCard('Noch offen',minsText(open))}${metricCard('Nachholen offen',minsText(makeupOpen))}</div><div class="week-summary-bar ${open?'pending':'complete'}">Wochenplanung: Soll ${minsText(target)} · als Lernen eingeplant ${minsText(planned)} · ${open?`noch offen ${minsText(open)}`:'vollständig eingeplant ✓'}</div><div class="week-grid-shell"><div class="week-grid" style="height:${canvasHeight}px"><div class="wg-head-left">Uhrzeit</div>${headHtml}<div class="wg-time-col" style="height:${canvasHeight}px">${timesHtml}</div>${colHtml}</div></div><div class="week-legend"><span class="lg u"><i></i> Uni / Pflichttermine</span><span class="lg s"><i></i> Lernen</span><span class="lg m"><i></i> Nachholen</span><span class="lg g"><i></i> Gym</span></div></div>`;
 }
 function renderPlannerRules(){
   const w=plannerState();
@@ -2857,12 +2951,12 @@ function renderDailyStudyTracking(){
     <div class="past-days-info">Heute ist der offene Fortschritt gelb. Bei 100% wird der Tag grün und als Erreicht markiert. Vergangene unvollständige Tage bleiben gelb und offen.</div>`
     :'<div class="muted">Noch keine Plan- oder Lerntage.</div>';
 
-  // Keep the latest 10-day view unchanged, but preserve every older incomplete
-  // planned day in a dedicated list below it until it reaches 100%.
-  const shownDates=new Set(rows);
-  const olderOpenDates=[...dates]
+  // Vergangene Tage stays exactly as the latest 10 entries.
+  // Offene Tage below it deliberately collects ALL incomplete past planned days,
+  // including open days that are also visible in the latest-10 list.
+  const allOpenPastDates=[...dates]
     .filter(d=>{
-      if(d>=today||shownDates.has(d))return false;
+      if(d>=today)return false;
       const pl=plannedStudyMinsForDate(d),dn=sessionsOn(d);
       return pl>0&&dn<pl;
     })
@@ -2871,20 +2965,20 @@ function renderDailyStudyTracking(){
 
   const olderOpenEl=$('#olderOpenStudyDays');
   const olderWrap=$('#olderOpenStudyDaysWrap');
-  if(olderOpenDates.length){
+  if(allOpenPastDates.length){
     olderWrap.classList.remove('hidden');
-    olderOpenEl.innerHTML=`<div class="past-days-list">${olderOpenDates.map(pastOpenDayRowHtml).join('')}</div>`;
+    olderOpenEl.innerHTML=`<div class="open-days-summary"><strong>${allOpenPastDates.length} offene ${allOpenPastDates.length===1?'Tag':'Tage'}</strong><span class="muted">Gesammelt aus dem gesamten Semester</span></div><div class="past-days-list">${allOpenPastDates.map(pastOpenDayRowHtml).join('')}</div>`;
   }else{
     olderWrap.classList.add('hidden');
     olderOpenEl.innerHTML='';
   }
 
-  const allOpenPastDates=[...dates].filter(d=>{
+  const allOpenPastDatesForBacklog=[...dates].filter(d=>{
     if(d>=today)return false;
     const pl=plannedStudyMinsForDate(d),dn=sessionsOn(d);
     return pl>0&&dn<pl;
   });
-  const totalBacklog=allOpenPastDates.reduce((sum,d)=>sum+Math.max(0,plannedStudyMinsForDate(d)-sessionsOn(d)),0);
+  const totalBacklog=allOpenPastDatesForBacklog.reduce((sum,d)=>sum+Math.max(0,plannedStudyMinsForDate(d)-sessionsOn(d)),0);
 
   const backlogEl=$('#pastStudyBacklog');
   backlogEl.textContent=totalBacklog?`Gesamtrückstand aus allen offenen vergangenen Tagen: ${minsText(totalBacklog)}`:'Kein Rückstand aus vergangenen Tagen';

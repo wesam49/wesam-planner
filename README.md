@@ -113,3 +113,20 @@ WesStudy v5.4.4
 - Added an Offene Tage section directly below it for older incomplete planned days.
 - Older open days remain visible until their planned study time reaches 100%.
 - The backlog summary now includes all open past days, not only the latest 10.
+
+## v5.7.2 — Open Days + Termine über Mitternacht
+- Open Days now appears directly below Vergangene Tage and lists ALL incomplete past planned days.
+- An open day may also appear in the latest-10 list; Open Days is intentionally the complete collected list.
+- Open days remain listed until 100% is reached.
+- Calendar activities may now end after midnight: an end time earlier than/equal to the start means next day.
+- Example: 22:00–01:30 is accepted and has a duration of 3:30.
+- In Wochenplan, overnight activities are split visually: the first part before 24:00 and a continuation after 00:00 on the following day.
+- Weekly/day-plan duration calculations now support cross-midnight entries.
+
+## v5.7.3 — Calendar Scroll + Open Days Inline
+- Fixed Wochenplan vertical scrolling: the 24-hour calendar now scrolls inside its own viewport.
+- The weekly grid keeps a fixed visible height while the full 00:00–24:00 canvas remains reachable.
+- Sticky weekday headers remain visible while scrolling.
+- Open Days moved out of Vergangene Tage and is now its own card directly before Lernumfang.
+- Open Days aggregates every incomplete past planned study day from the entire semester.
+- Nothing else in the dashboard structure was changed.
